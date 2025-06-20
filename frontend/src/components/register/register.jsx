@@ -7,6 +7,8 @@ import auth, {
   signInWithPopup,
 } from "../../firebase"; // adjust path if needed
 import axios from "axios";
+import { useUser } from "@civic/auth/react";
+import { getAuth, signOut as firebaseSignOut } from "firebase/auth";
 
 
 const Register = () => {
@@ -17,11 +19,13 @@ const Register = () => {
   const [useremail, setEmail] = useState("");
   const [userpassword, setPassword] = useState("");
 
+  const { user, signIn, isAuthenticated, isLoading } = useUser();
+
   const handleGoogleSignUp = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       console.log("Google Sign Up successful: ", result.user);
-        // ✅ Save name to localStorage
+      // ✅ Save name to localStorage
       localStorage.setItem("userName", result.user.displayName);
       navigate("/dashboard");
     } catch (error) {
@@ -33,7 +37,7 @@ const Register = () => {
     try {
       const result = await signInWithPopup(auth, githubProvider);
       console.log("GitHub Sign Up successful: ", result.user);
-        // ✅ Save name to localStorage
+      // ✅ Save name to localStorage
       localStorage.setItem("userName", result.user.displayName);
       navigate("/dashboard");
     } catch (error) {
@@ -41,17 +45,39 @@ const Register = () => {
     }
   };
 
+  const handleCivicLogin = async () => {
+    try {
+      // Prevent Firebase/Civic session clash
+      await firebaseSignOut(getAuth());
+
+      await signIn(); // Civic login
+      if (user) {
+        const userInfo = {
+          name: user.name || user.id || "CivicUser",
+          picture: user.picture || "",
+        };
+        localStorage.setItem("cvisionary:user", JSON.stringify(userInfo));
+        navigate("/dashboard");
+      } else {
+        alert("Civic login did not return user info.");
+      }
+    } catch (err) {
+      console.error("Civic login failed:", err);
+      alert("Civic login failed. Please try again.");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Form Data:", { username,useremail,userpassword });
+    console.log("Form Data:", { username, useremail, userpassword });
     try {
-      const response=await axios.post(`${import.meta.env.VITE_DEV_URL}auth/register`,{username,useremail,userpassword})
-      
-      if(response.data.success){
+      const response = await axios.post(`${import.meta.env.VITE_DEV_URL}auth/register`, { username, useremail, userpassword })
+
+      if (response.data.success) {
         localStorage.setItem("tokenCV", response.data.accessToken);
         console.log("Registration successful:", response.data.message);
         navigate("/dashboard");
-      } 
+      }
     } catch (error) {
       console.error("Registration error:", error);
       alert("Registration failed. Please try again.");
@@ -134,8 +160,16 @@ const Register = () => {
             >
               Sign Up with GitHub
             </button>
+
+
           </div>
 
+          <button
+            onClick={handleCivicLogin}
+            className="w-full mt-4 bg-blue-700 text-white py-2 rounded-md hover:bg-blue-800 transition duration-300 font-medium"
+          >
+            Register with Civic
+          </button>
           <p className="text-center text-sm text-gray-400 mt-6">
             Already have an account?{" "}
             <a href="/login" className="text-blue-400 hover:underline">

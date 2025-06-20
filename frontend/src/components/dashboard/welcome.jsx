@@ -12,19 +12,17 @@ const WelcomeSection = ({ darkMode }) => {
 
   return (
     <section
-      className={`w-full py-16 px-4 md:px-10 mt-12 ${
-        darkMode
+      className={`w-full py-16 px-4 md:px-10 mt-12 ${darkMode
           ? "bg-[#0d0b22] text-white"
           : "bg-white text-[#18181b]"
-      }`}
+        }`}
     >
       <div className="max-w-4xl mx-auto text-center">
         <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
           Welcome to CVisionary{userName && `, ${userName}`}
         </h1>
-        <p className={`text-lg md:text-xl mb-8 ${
-          darkMode ? "text-gray-400" : "text-gray-600"
-        }`}>
+        <p className={`text-lg md:text-xl mb-8 ${darkMode ? "text-gray-400" : "text-gray-600"
+          }`}>
           Craft a standout resume that showcases your skills and helps you land your dream job.
         </p>
         <div className={`flex items-center justify-between max-w-2xl mx-auto gap-3 rounded-full px-6 py-3 transition-all duration-300
@@ -37,11 +35,10 @@ const WelcomeSection = ({ darkMode }) => {
           <input
             type="text"
             placeholder="Type your question or request here..."
-            className={`flex-grow bg-transparent outline-none text-sm ${
-              darkMode
+            className={`flex-grow bg-transparent outline-none text-sm ${darkMode
                 ? "text-white placeholder:text-blue-400"
                 : "text-gray-900 placeholder:text-blue-500"
-            } placeholder:animate-pulse`}
+              } placeholder:animate-pulse`}
           />
           <Wand2 className={`w-5 h-5 ${darkMode ? "text-blue-500 hover:text-white" : "text-blue-600 hover:text-blue-800"} transition-colors duration-300 cursor-pointer`} />
         </div>
