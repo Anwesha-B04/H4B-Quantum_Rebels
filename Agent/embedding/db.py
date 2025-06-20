@@ -113,3 +113,31 @@ def search_chunks_vector(
     
     results = list(collection.aggregate(pipeline))
     return results
+
+def get_users_collection() -> Collection:
+    if _db is None:
+        init_db()
+    return _db["users"]
+
+def mark_user_indexed(user_id: str) -> None:
+    users_collection = get_users_collection()
+    update_result = users_collection.update_one(
+        {"_id": user_id},
+        {"$set": {"embeddings_last_updated": datetime.now(timezone.utc)}},
+        upsert=True
+    )
+    
+    if update_result.upserted_id:
+        print(f"Created new user document for {user_id} with indexing timestamp.")
+    elif update_result.modified_count > 0:
+        print(f"Updated indexing timestamp for user {user_id}.")
+    else:
+        print(f"No changes made to user {user_id}'s document.")
+
+def get_user_index_status(user_id: str) -> Optional[datetime]:
+    users_collection = get_users_collection()
+    user_doc = users_collection.find_one(
+        {"_id": user_id},
+        {"embeddings_last_updated": 1}
+    )
+    return user_doc.get("embeddings_last_updated") if user_doc else None
