@@ -27,8 +27,11 @@ function Navbar({ isLoggedIn, darkMode, setDarkMode, }) {
       `}
     >
       <div className="flex items-center space-x-2">
+        
         <Sparkles className={darkMode ? "w-5 h-5 text-white" : "w-5 h-5 text-blue-600"} />
+        <a href="/" className="flex items-center space-x-2">
         <span className={`font-semibold text-lg ${darkMode ? "text-white" : "text-gray-900"}`}>CVisionary</span>
+        </a>
       </div>
       <div className="flex items-center space-x-6">
         <button
