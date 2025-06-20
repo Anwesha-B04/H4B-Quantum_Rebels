@@ -3,6 +3,7 @@ import connectToDB from "./db/db.js"
 import JobRouter from "./Routes/JobRoutes.js";
 import ResumeRouter from "./Routes/ResumeRoutes.js";
 import UserRouter from "./Routes/UserRoutes.js";
+import ReviewsRouter from "./Routes/Reviews.js";
 const app = express()
 const port = 8080
 
@@ -24,6 +25,7 @@ connectToDB()
 app.use("/auth",UserRouter)
 app.use("/jobs",JobRouter)
 app.use("/resume", ResumeRouter);
+app.use("/reviews",ReviewsRouter)
 
 app.listen(port, () => {
   console.log(`Server is  listening on port ${port}`)
