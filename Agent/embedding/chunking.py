@@ -1,13 +1,10 @@
-# --- START OF FILE chunking.py ---
 import nltk
 import logging
 from typing import List, Tuple
 
-# Configure logging
 logger = logging.getLogger(__name__)
 
 def _download_nltk_data():
-    """Download required NLTK data if not already present."""
     required_data = ["punkt", "punkt_tab"]
     
     for data in required_data:
@@ -21,27 +18,22 @@ def _download_nltk_data():
                 logger.info(f"Successfully downloaded NLTK {data} tokenizer")
             except Exception as e:
                 logger.error(f"Failed to download NLTK {data} tokenizer: {e}")
-                # Try alternative download method
                 try:
                     import ssl
                     import urllib.request
                     import shutil
                     
-                    # Create nltk_data directory if it doesn't exist
                     nltk_dir = os.path.join(os.path.expanduser('~'), 'nltk_data')
                     os.makedirs(nltk_dir, exist_ok=True)
                     
-                    # Download punkt data
                     url = f"https://raw.githubusercontent.com/nltk/nltk_data/gh-pages/packages/tokenizers/{data}.zip"
                     target_path = os.path.join(nltk_dir, f"{data}.zip")
                     
-                    # Handle SSL certificate verification
                     ssl._create_default_https_context = ssl._create_unverified_context
                     
                     with urllib.request.urlopen(url) as response, open(target_path, 'wb') as out_file:
                         shutil.copyfileobj(response, out_file)
                     
-                    # Extract the zip file
                     import zipfile
                     with zipfile.ZipFile(target_path, 'r') as zip_ref:
                         zip_ref.extractall(nltk_dir)
@@ -51,27 +43,15 @@ def _download_nltk_data():
                     logger.error(f"Alternative download method also failed: {e2}")
                     raise
 
-# Ensure required NLTK data is downloaded when module is imported
 _download_nltk_data()
 
 def chunk_text(text: str, max_words: int = 150) -> List[str]:
-    """
-    Split text into chunks of sentences, where each chunk has at most max_words.
-    
-    Args:
-        text: The input text to chunk
-        max_words: Maximum number of words per chunk
-        
-    Returns:
-        List of text chunks
-    """
     if not text or not text.strip():
         return []
 
     try:
         sentences = nltk.sent_tokenize(text)
     except LookupError:
-        # If punkt isn't found, try downloading it again
         _download_nltk_data()
         sentences = nltk.sent_tokenize(text)
         

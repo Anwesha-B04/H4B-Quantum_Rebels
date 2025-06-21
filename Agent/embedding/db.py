@@ -1,4 +1,3 @@
-# --- START OF FILE db.py ---
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from typing import List, Optional, Dict, Any
@@ -39,15 +38,6 @@ def get_profile_by_id(user_id: str) -> Optional[Dict[str, Any]]:
     return collection.find_one({"_id": user_id})
 
 def create_or_update_profile(profile_data: Dict[str, Any]) -> bool:
-    """
-    Create or update a user profile in the database.
-    
-    Args:
-        profile_data: Dictionary containing profile data, must include '_id' field
-        
-    Returns:
-        bool: True if successful, False otherwise
-    """
     if not profile_data or "_id" not in profile_data:
         return False
         
