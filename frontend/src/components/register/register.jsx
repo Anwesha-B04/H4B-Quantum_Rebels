@@ -82,8 +82,10 @@ const Register = () => {
         console.log("Registration successful:", response.data.message);
         if(role=="company"){
           navigate("/company-dashboard")
+        }else{
+
+          navigate("/dashboard");
         }
-        navigate("/dashboard");
       }
     } catch (error) {
       console.error("Registration error:", error);

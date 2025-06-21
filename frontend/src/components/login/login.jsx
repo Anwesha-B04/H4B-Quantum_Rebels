@@ -76,6 +76,7 @@ const Login = () => {
       const response = await axios.post(`${import.meta.env.VITE_DEV_URL}auth/login`, {
         useremail,
         userpassword,
+        role
       });
 
       if (response.data.success) {
@@ -84,7 +85,12 @@ const Login = () => {
           "cvisionary:user",
           JSON.stringify({ name: useremail, picture: "" }) // Optional avatar
         );
-        navigate("/dashboard");
+        if(role=="company"){
+          navigate("/company-dashboard")
+        }else{
+
+          navigate("/dashboard");
+        }
       } else {
         setError(response.data.message);
       }
