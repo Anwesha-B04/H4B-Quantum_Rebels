@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 import httpx
 from datetime import datetime
 import pytz
+import traceback
 from dotenv import load_dotenv
 load_dotenv()
 from . import services, db, model, config, schemas
@@ -40,7 +41,7 @@ async def get_http_client() -> httpx.AsyncClient:
 async def create_test_profile(profile: schemas.CreateProfileRequest):
     from bson import ObjectId
     
-    user_id = str(ObjectId()
+    user_id = str(ObjectId())
     profile_data = profile.dict()
     profile_data["_id"] = user_id
     profile_data["created_at"] = datetime.utcnow()
@@ -104,9 +105,11 @@ async def retrieve_similar_chunks(user_id: str, request: schemas.RetrieveRequest
                 status_code=404,
                 detail="No indexed data found for user. Please index data first."
             )
-        if (datetime.now(pytz.utc) - last_indexed).days > 7:
-            print(f"Warning: User {user_id}'s data was last indexed {last_indexed}")
         
+        # FIX: Use datetime.utcnow() to get a naive datetime for comparison
+        if (datetime.utcnow() - last_indexed).days > 7:
+            print(f"Warning: User {user_id}'s data was last indexed {last_indexed}")
+
         search_results = db.search_chunks_vector(
             user_id=user_id,
             namespace=request.index_namespace,
@@ -114,10 +117,16 @@ async def retrieve_similar_chunks(user_id: str, request: schemas.RetrieveRequest
             top_k=request.top_k,
             filter_by_section_ids=request.filter_by_section_ids
         )
+        
         results = [schemas.ChunkItem(**res) for res in search_results]
+
         return schemas.RetrieveResponse(results=results)
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error during retrieval: {e}")
+        # You can keep the detailed error logging for now if you like, or remove it.
+        # For production, you'd want a cleaner error handler.
+        print(f"An error occurred during retrieval: {e}")
+        raise HTTPException(status_code=500, detail=f"An internal error occurred during retrieval.")
 
 @app.post("/embed", response_model=schemas.EmbedResponse, tags=["Utilities"])
 async def embed_text_endpoint(request: schemas.EmbedRequest):
