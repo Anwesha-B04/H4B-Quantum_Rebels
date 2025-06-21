@@ -14,6 +14,7 @@ import Social_Linkedin from "./pages/socials-linkedln.jsx"
 import Jobs from "./pages/job.jsx"
 
 
+
 function App() {
 
 
@@ -30,6 +31,7 @@ function App() {
       <Route path="/socials/github" element={<Social_Github />} />
       <Route path="/socials/linkedin" element={<Social_Linkedin />} />
       <Route path="/jobs" element={<Jobs />} />
+      
 
     </Routes>
 

@@ -10,9 +10,13 @@ const LinkedInUpload = ({ darkMode }) => {
   const [userName, setUserName] = useState("");
 
   useEffect(() => {
-    const storedName = localStorage.getItem("userName");
-    if (storedName) setUserName(storedName);
-  }, []);
+  const storedUser = localStorage.getItem("cvisionary:user");
+  if (storedUser) {
+    const parsedUser = JSON.parse(storedUser);
+    setUserName(parsedUser.name || "");
+  }
+}, []);
+
 
   // Theme classes
   const bgClass = darkMode ? "bg-[#0a0a23]" : "bg-white";
