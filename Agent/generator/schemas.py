@@ -30,7 +30,7 @@ class RetrieveResponse(BaseModel):
 
 class GenerateResponse(BaseModel):
     generated_text: str
-    raw_prompt: str
+    raw_prompt: Optional[str] = None
     retrieval_mode: str
     section_id: Optional[str] = None
 
