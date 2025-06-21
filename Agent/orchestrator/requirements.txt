@@ -1,8 +1,0 @@
-fastapi
-uvicorn[standard]
-httpx
-pydantic
-langchain
-langchain-google-genai
-langchain_community
-redis
