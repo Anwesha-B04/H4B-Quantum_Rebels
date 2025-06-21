@@ -36,6 +36,8 @@ export default function ChatWindow({ darkMode, setLivePreview }) {
     fetchdata()
   },[])
 
+  
+
   // auto‑scroll on new content
   useEffect(() => {
     const container = containerRef.current;

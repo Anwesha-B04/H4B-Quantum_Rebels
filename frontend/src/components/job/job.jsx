@@ -20,7 +20,7 @@ const JobApply = ({ darkMode }) => {
 
 
   const [jobTitle, setJobTitle] = useState("");
-  const [jobDesc, setJobDesc] = useState("");
+
   const [company, setCompany] = useState("");
   const [location, setLocation] = useState("");
   const [category, setCategory] = useState("");

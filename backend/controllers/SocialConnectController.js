@@ -169,7 +169,7 @@ const createProfile = async (req, res) => {
 const getProfileData=async(req,res)=>{
   const {userId}=req.body
   try {
-    const profile=await profiles.find({userId});
+    const profile=await profiles.findOne({userId});
     res.json({
       success:true,
       message:"profile fetched",
