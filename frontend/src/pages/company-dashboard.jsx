@@ -34,7 +34,7 @@ const CompanyDashboard = () => {
           className={`flex justify-center items-center px-10 mb-8 transition-colors duration-300 ${
             darkMode ? "bg-[#0d0b22]" : "bg-white"
           }`}
-          style={{ minHeight: "120px" }} // Ensures enough height for centering
+          style={{ minHeight: "120px" }} 
         >
           <button
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded"

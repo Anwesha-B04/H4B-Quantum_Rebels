@@ -74,11 +74,15 @@ const Register = () => {
     e.preventDefault();
     console.log("Form Data:", { username, useremail, userpassword });
     try {
-      const response = await axios.post(`${import.meta.env.VITE_DEV_URL}auth/register`, { username, useremail, userpassword })
-
+      const response = await axios.post(`${import.meta.env.VITE_DEV_URL}auth/register`, { username, useremail, userpassword ,role})
+      console.log(response)
+      setError(response.data.message)
       if (response.data.success) {
         localStorage.setItem("tokenCV", response.data.accessToken);
         console.log("Registration successful:", response.data.message);
+        if(role=="company"){
+          navigate("/company-dashboard")
+        }
         navigate("/dashboard");
       }
     } catch (error) {
