@@ -1,9 +1,11 @@
-import os
-from pymongo import MongoClient, ReturnDocument
+# --- START OF FILE db.py ---
+from pymongo import MongoClient
 from pymongo.collection import Collection
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 import numpy as np
+
+from . import config
 
 _client: Optional[MongoClient] = None
 _db = None
@@ -11,14 +13,9 @@ _db = None
 def init_db():
     global _client, _db
     if _client is None:
-        mongo_uri = os.getenv("MONGO_URI")
-        db_name = os.getenv("MONGO_DB_NAME", "cvisionary")
-        if not mongo_uri:
-            raise ValueError("MONGO_URI environment variable not set.")
-        
         print("Connecting to MongoDB Atlas...")
-        _client = MongoClient(mongo_uri)
-        _db = _client[db_name]
+        _client = MongoClient(config.MONGO_URI)
+        _db = _client[config.MONGO_DB_NAME]
         
         try:
             _client.admin.command('ping')
@@ -31,6 +28,15 @@ def get_chunks_collection() -> Collection:
     if _db is None:
         init_db()
     return _db["chunks"]
+
+def get_profiles_collection() -> Collection:
+    if _db is None:
+        init_db()
+    return _db["profiles"]
+
+def get_profile_by_id(user_id: str) -> Optional[Dict[str, Any]]:
+    collection = get_profiles_collection()
+    return collection.find_one({"_id": user_id})
 
 def store_chunk(chunk_id: str, user_id: str, namespace: str, section_id: Optional[str],
                 source_type: str, source_id: str, text: str, embedding_vector: np.ndarray) -> None:
@@ -121,18 +127,11 @@ def get_users_collection() -> Collection:
 
 def mark_user_indexed(user_id: str) -> None:
     users_collection = get_users_collection()
-    update_result = users_collection.update_one(
+    users_collection.update_one(
         {"_id": user_id},
         {"$set": {"embeddings_last_updated": datetime.now(timezone.utc)}},
         upsert=True
     )
-    
-    if update_result.upserted_id:
-        print(f"Created new user document for {user_id} with indexing timestamp.")
-    elif update_result.modified_count > 0:
-        print(f"Updated indexing timestamp for user {user_id}.")
-    else:
-        print(f"No changes made to user {user_id}'s document.")
 
 def get_user_index_status(user_id: str) -> Optional[datetime]:
     users_collection = get_users_collection()
