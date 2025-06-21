@@ -4,16 +4,25 @@ import LivePreview from "../components/resume_builder/live";
 import { AnimatePresence, motion } from "framer-motion";
 import Navbar from "@/components/landing/Navbar";
 import { getInitialDarkMode, setDarkModePreference } from "@/utils/theme";
+import { useEffect } from "react";
+import Footer from "@/components/dashboard/footer";
 
-// Mock user data - replace with actual user context or props as needed
-const mockUser = {
-  username: "JohnDoe", // Replace with actual username from auth/user context
-};
+
 
 export default function Resume_builder() {
   const [hasStarted, setHasStarted] = useState(false);
   const [livePreview, setLivePreview] = useState("");
   const [darkMode, setDarkMode] = useState(getInitialDarkMode());
+
+  const [userName, setUserName] = useState("");
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("cvisionary:user");
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      setUserName(parsedUser.name || "");
+    }
+  }, []);
 
   const handleStart = () => {
     setHasStarted(true);
@@ -50,8 +59,8 @@ export default function Resume_builder() {
             style={{ flex: 1 }}
           >
             <div className="flex flex-col items-center justify-center w-full h-full flex-1">
-              <h1 className={`text-5xl md:text-6xl font-bold text-center mb-6 drop-shadow-lg ${headingClass}`}>
-                Welcome to CVisionary, <span className="block">{mockUser.username}</span>
+              <h1 className="text-4xl md:text-5xl font-bold mb-2 text-center leading-tight">
+                Welcome  {userName && `, ${userName}`}
               </h1>
               <p className={`text-xl md:text-2xl text-center mb-10 max-w-2xl ${subTextClass}`}>
                 Craft a standout resume that showcases your skills and helps you land your dream job.
@@ -85,6 +94,7 @@ export default function Resume_builder() {
           </motion.div>
         )}
       </AnimatePresence>
+      
     </div>
   );
 }

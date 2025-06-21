@@ -27,7 +27,7 @@ const dropVariants = {
   animate: { opacity: 1, y: 0, transition: { duration: 0.7 } },
 };
 
-function ResumeReviewer({ darkMode, setDarkMode }) { // <-- Accept as props
+function ResumeReviewer({ darkMode, setDarkMode }) { 
   const [dragActive, setDragActive] = useState(false);
   const [file, setFile] = useState(null);
   const inputRef = useRef();
@@ -58,7 +58,7 @@ function ResumeReviewer({ darkMode, setDarkMode }) { // <-- Accept as props
     <div className={darkMode ? "bg-[#13132a] min-h-screen" : "bg-white min-h-screen"}>
       <Navbar isLoggedIn={true} darkMode={darkMode} setDarkMode={setDarkMode} />
       <div className="pt-24 px-4 md:px-0 max-w-5xl mx-auto pb-12">
-        {/* Upload Section */}
+        
         <motion.section
           initial="initial"
           animate="animate"
@@ -138,7 +138,7 @@ function ResumeReviewer({ darkMode, setDarkMode }) { // <-- Accept as props
           </div>
         </motion.section>
 
-        {/* Features Section */}
+        
         <motion.section
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}

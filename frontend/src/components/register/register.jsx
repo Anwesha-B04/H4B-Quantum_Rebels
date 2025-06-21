@@ -5,7 +5,7 @@ import auth, {
   googleProvider,
   githubProvider,
   signInWithPopup,
-} from "../../firebase"; // adjust path if needed
+} from "../../firebase"; 
 import axios from "axios";
 import { useUser } from "@civic/auth/react";
 import { getAuth, signOut as firebaseSignOut } from "firebase/auth";
@@ -14,7 +14,7 @@ import { getAuth, signOut as firebaseSignOut } from "firebase/auth";
 const Register = () => {
   const navigate = useNavigate();
 
-  // Form state
+  
   const [username, setName] = useState("");
   const [useremail, setEmail] = useState("");
   const [userpassword, setPassword] = useState("");
@@ -28,7 +28,7 @@ const Register = () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       console.log("Google Sign Up successful: ", result.user);
-      // ✅ Save name to localStorage
+
       localStorage.setItem("userName", result.user.displayName);
       navigate("/dashboard");
     } catch (error) {
@@ -40,7 +40,7 @@ const Register = () => {
     try {
       const result = await signInWithPopup(auth, githubProvider);
       console.log("GitHub Sign Up successful: ", result.user);
-      // ✅ Save name to localStorage
+      
       localStorage.setItem("userName", result.user.displayName);
       navigate("/dashboard");
     } catch (error) {
@@ -50,10 +50,10 @@ const Register = () => {
 
   const handleCivicLogin = async () => {
     try {
-      // Prevent Firebase/Civic session clash
+      
       await firebaseSignOut(getAuth());
 
-      await signIn(); // Civic login
+      await signIn(); 
       if (user) {
         const userInfo = {
           name: user.name || user.id || "CivicUser",
@@ -97,7 +97,7 @@ const Register = () => {
   return (
     <div className="min-h-screen bg-[#0f0f1c] flex items-center justify-center px-4">
       <div className="bg-[#1a1a2e] text-white rounded-2xl shadow-lg flex flex-col md:flex-row overflow-hidden w-full max-w-4xl">
-        {/* Right Image */}
+        
         <div className="hidden md:flex items-center justify-center bg-[#202030] w-full md:w-1/2">
           <img
             src={RegisterImage}
@@ -106,7 +106,7 @@ const Register = () => {
           />
         </div>
 
-        {/* Left Form */}
+        
         <div className="flex-1 p-10">
           <h2 className="text-3xl font-bold mb-2">Create an Account</h2>
           <p className="text-gray-400 mb-6">Join the CVisionary platform</p>

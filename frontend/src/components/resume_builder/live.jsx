@@ -10,7 +10,7 @@ export default function LivePreview({ previewContent, darkMode }) {
         className={`
           max-w-[800px] mx-auto p-8 rounded-lg shadow-lg h-full
           ${darkMode 
-            ? "bg-[#181a2a] text-white"
+            ? "bg-[#1E1B3A] text-white"
             : "bg-white text-[#181A2A] border border-[#e5e7eb]"}
         `}
       >

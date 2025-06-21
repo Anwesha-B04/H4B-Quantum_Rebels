@@ -9,22 +9,6 @@ logger = logging.getLogger(__name__)
 async def retrieve_full_context(
     client: httpx.AsyncClient, user_id: str, job_description: str, top_k: int
 ) -> List[ChunkItem]:
-    """
-    Retrieve full context for a user based on job description.
-    
-    Args:
-        client: HTTP client for making requests
-        user_id: ID of the user to retrieve context for
-        job_description: Job description to match against
-        top_k: Number of top chunks to retrieve
-        
-    Returns:
-        List of ChunkItem objects containing the retrieved context
-        
-    Raises:
-        ValueError: If RETRIEVAL_SERVICE_URL is not configured
-        HTTPError: If the request to the retrieval service fails
-    """
     retrieval_url = os.getenv("RETRIEVAL_SERVICE_URL")
     if not retrieval_url:
         raise ValueError("RETRIEVAL_SERVICE_URL is not configured")
@@ -50,23 +34,6 @@ async def retrieve_section_context(
     job_description: str,
     top_k: int = 5
 ) -> List[ChunkItem]:
-    """
-    Retrieve context for a specific section based on job description.
-    
-    Args:
-        client: HTTP client for making requests
-        user_id: ID of the user
-        section_id: ID of the section to retrieve
-        job_description: Job description to match against
-        top_k: Number of top chunks to retrieve (default: 5)
-        
-    Returns:
-        List of ChunkItem objects containing the retrieved section context
-        
-    Raises:
-        ValueError: If RETRIEVAL_SERVICE_URL is not configured
-        HTTPError: If the request to the retrieval service fails
-    """
     retrieval_url = os.getenv("RETRIEVAL_SERVICE_URL")
     if not retrieval_url:
         raise ValueError("RETRIEVAL_SERVICE_URL is not configured")
@@ -92,15 +59,6 @@ async def retrieve_section_context(
 
 
 def format_context_for_prompt(chunks: List[ChunkItem]) -> str:
-    """
-    Format a list of ChunkItems into a string suitable for LLM prompts.
-    
-    Args:
-        chunks: List of ChunkItem objects to format
-        
-    Returns:
-        Formatted string with chunk information
-    """
     if not chunks:
         return "No relevant context found."
         
