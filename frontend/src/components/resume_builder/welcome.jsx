@@ -6,9 +6,13 @@ const Welcome = ({ onPromptSubmit, darkMode }) => {
   const [userName, setUserName] = useState("");
 
   useEffect(() => {
-    const storedName = localStorage.getItem("userName");
-    if (storedName) setUserName(storedName);
-  }, []);
+  const storedUser = localStorage.getItem("cvisionary:user");
+  if (storedUser) {
+    const parsedUser = JSON.parse(storedUser);
+    setUserName(parsedUser.name || "");
+  }
+}, []);
+
 
   const handleSubmit = (e) => {
     e.preventDefault();

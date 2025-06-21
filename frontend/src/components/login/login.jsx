@@ -51,8 +51,7 @@ const Login = () => {
 
   const handleCivicLogin = async () => {
     try {
-      // Prevent Firebase/Civic session clash
-      await firebaseSignOut(getAuth());
+      
 
       await signIn(); // Civic login
       if (user) {
@@ -167,19 +166,19 @@ const Login = () => {
 
           <div className="flex flex-col gap-4 mt-4">
             <div className="flex flex-row gap-4">
-            <button
-              onClick={handleGithubLogin}
-              className="w-full bg-white text-black py-2 rounded-md hover:opacity-90 transition duration-300 font-medium"
-            >
-              Login with GitHub
-            </button>
+              <button
+                onClick={handleGithubLogin}
+                className="w-full bg-white text-black py-2 rounded-md hover:opacity-90 transition duration-300 font-medium"
+              >
+                Login with GitHub
+              </button>
 
-            <button
-              onClick={handleGoogleLogin}
-              className="w-full bg-blue-700 text-white py-2 rounded-md hover:bg-blue-800 transition duration-300 font-medium"
-            >
-              Login with Google
-            </button>
+              <button
+                onClick={handleGoogleLogin}
+                className="w-full bg-blue-700 text-white py-2 rounded-md hover:bg-blue-800 transition duration-300 font-medium"
+              >
+                Login with Google
+              </button>
             </div>
             <button
               onClick={handleCivicLogin}

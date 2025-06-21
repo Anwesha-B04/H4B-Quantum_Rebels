@@ -16,6 +16,7 @@ function Navbar({ isLoggedIn, darkMode, setDarkMode }) {
 
   const handlelogout = async () => {
     try {
+      window.localStorage.removeItem("tokenCV");
       const auth = getAuth();
       await signOut(auth); // Firebase logout
 
