@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 
 const testimonials = [
-  // ...existing testimonials...
+  
   {
     name: "Ananya Sharma",
     text: "CVisionary helped me personalize my resume perfectly for MNC roles. I got interview calls within days!",

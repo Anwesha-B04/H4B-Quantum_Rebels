@@ -4,7 +4,7 @@ import LoginImage from "../../assets/images/login.jpg";
 import auth, { githubProvider, googleProvider, signInWithPopup } from "../../firebase";
 import axios from "axios";
 import { useUser } from "@civic/auth/react";
-import { getAuth, signOut as firebaseSignOut } from "firebase/auth"; // Added
+import { getAuth, signOut as firebaseSignOut } from "firebase/auth"; 
 
 
 const Login = () => {
@@ -58,7 +58,7 @@ const Login = () => {
     try {
 
 
-      await signIn(); // Civic login
+      await signIn();
       if (user) {
         const userInfo = {
           name: user.name || user.id || "CivicUser",
@@ -83,6 +83,7 @@ const Login = () => {
       const response = await axios.post(`${import.meta.env.VITE_DEV_URL}auth/login`, {
         useremail,
         userpassword,
+        role
       });
 
       if (response.data.success) {
@@ -91,7 +92,12 @@ const Login = () => {
           "cvisionary:user",
           JSON.stringify({ name: useremail, picture: "" }) // Optional avatar
         );
-        navigate("/dashboard");
+        if(role=="company"){
+          navigate("/company-dashboard")
+        }else{
+
+          navigate("/dashboard");
+        }
       } else {
         setError(response.data.message);
       }
@@ -106,7 +112,7 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-[#0f0f1c] flex items-center justify-center px-4 ">
       <div className="bg-[#1a1a2e] text-white rounded-2xl shadow-lg flex flex-col md:flex-row overflow-hidden w-full max-w-4xl">
-        {/* Left Section */}
+        
         <div className="flex-1 p-10">
           <h2 className="text-3xl font-bold mb-2">Welcome Back</h2>
           <p className="text-gray-400 mb-6">Login to your CVisionary account</p>
@@ -203,7 +209,7 @@ const Login = () => {
           </p>
         </div>
 
-        {/* Right Section */}
+        
         <div className="hidden md:flex items-center justify-center bg-[#202030] w-full md:w-1/2">
           <img
             src={LoginImage}

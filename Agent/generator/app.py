@@ -56,7 +56,7 @@ async def generate_full_resume(request: FullGenerateRequest, client: httpx.Async
             logger.error(f"LLM did not return valid JSON. Raw output: {generated_text}")
             raise LLMError("LLM failed to generate valid JSON output.")
 
-        return GenerateResponse(generated_text=generated_text, raw_prompt=prompt, retrieval_mode="full")
+        return GenerateResponse(generated_text=generated_text, retrieval_mode="full")
         
     except (httpx.HTTPError, LLMError, ValueError) as e:
         logger.error(f"Downstream service error during full generation: {e}")
@@ -88,7 +88,7 @@ async def generate_section(request: SectionGenerateRequest, client: httpx.AsyncC
             logger.error(f"LLM did not return valid JSON. Raw output: {generated_text}")
             raise LLMError("LLM failed to generate valid JSON output.")
 
-        return GenerateResponse(generated_text=generated_text, raw_prompt=prompt, retrieval_mode="section", section_id=request.section_id)
+        return GenerateResponse(generated_text=generated_text, retrieval_mode="section", section_id=request.section_id)
 
     except (httpx.HTTPError, LLMError, ValueError) as e:
         logger.error(f"Downstream service error during section generation: {e}")

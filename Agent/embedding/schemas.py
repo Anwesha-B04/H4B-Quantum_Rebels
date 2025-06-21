@@ -29,7 +29,7 @@ class ProfileBase(BaseModel):
     education: List[Dict] = []
 
 class Profile(ProfileBase):
-    id: str = Field(..., alias="_id")
+    user_id: str = Field(..., description="The user's unique identifier")
     
     class Config:
         allow_population_by_field_name = True

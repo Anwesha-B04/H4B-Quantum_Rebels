@@ -18,7 +18,7 @@ const JobApply = ({ darkMode }) => {
   }, []);
 
 
-  // Form states
+
   const [jobTitle, setJobTitle] = useState("");
   const [jobDesc, setJobDesc] = useState("");
   const [company, setCompany] = useState("");
@@ -48,7 +48,7 @@ const JobApply = ({ darkMode }) => {
     );
   };
 
-  // Theme classes
+
   const bgClass = darkMode ? "bg-[#0a0a23]" : "bg-white";
   const textClass = darkMode ? "text-white" : "text-gray-900";
   const subTextClass = darkMode ? "text-gray-400" : "text-gray-600";
@@ -66,7 +66,7 @@ const JobApply = ({ darkMode }) => {
 
   return (
     <div className={`min-h-screen ${bgClass} ${textClass} flex flex-col items-center justify-center px-4 transition-colors duration-300`}>
-      {/* Go to Dashboard Button */}
+      
       <div className="absolute top-24 right-6">
         <button
           onClick={() => navigate("/dashboard")}
@@ -77,7 +77,7 @@ const JobApply = ({ darkMode }) => {
       </div>
 
       <div className="text-center mb-10">
-        {/* Welcome Heading */}
+        
         <h1 className="text-4xl md:text-5xl font-bold mb-2 text-center leading-tight">
           Hey {userName && `, ${userName}`}
         </h1>
@@ -91,7 +91,7 @@ const JobApply = ({ darkMode }) => {
         Apply For Your Job
       </button>
 
-      {/* Modal */}
+      
       <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
         <div className="fixed inset-0 bg-black/60" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">

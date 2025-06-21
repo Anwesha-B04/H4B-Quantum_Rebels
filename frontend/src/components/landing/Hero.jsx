@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 function Hero({ darkMode }) {
   return (
     <section className={`flex flex-col md:flex-row items-center justify-center md:justify-between -mt-30 px-8 pt-32 pb-12 ${darkMode ? "bg-[#13132a]" : "bg-white"}`}>
-      {/* Animated Image Container */}
+      
       <motion.div
         initial={{ opacity: 0, x: -50, scale: 0.95 }}
         whileInView={{ opacity: 1, x: 0, scale: 1 }}
@@ -24,7 +24,7 @@ function Hero({ darkMode }) {
         />
       </motion.div>
 
-      {/* Text Content */}
+      
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
