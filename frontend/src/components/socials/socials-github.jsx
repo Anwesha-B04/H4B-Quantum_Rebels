@@ -103,11 +103,19 @@ const GithubConnect = ({ darkMode }) => {
       try {
         const response = await axios.post(
           `${import.meta.env.VITE_DEV_URL}Scrapper/github/data`,
-          {userId:decoded.userId ,userName:githubUsername, avatar, bio, followers, following, repos }
+          {
+            userId: decoded.userId,
+            userName: githubUsername,
+            avatar,
+            bio,
+            followers,
+            following,
+            repos,
+          }
         );
         console.log(response);
       } catch (error) {
-        console.error(error)
+        console.error(error);
       }
     } catch (error) {
       console.error(error);
