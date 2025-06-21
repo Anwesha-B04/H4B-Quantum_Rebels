@@ -1,236 +1,338 @@
-# CVisionary Agentic Orchestrator
+# CVisionary Orchestrator Agent Service
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![Framework](https://img.shields.io/badge/Framework-FastAPI-green.svg)](https://fastapi.tiangolo.com/)
+[![LangChain](https://img.shields.io/badge/LangChain-Agent-purple.svg)](https://www.langchain.com/)
 
-An intelligent, autonomous agent that orchestrates the CVisionary microservices to generate and iteratively refine resumes until they meet a specified quality standard. This service transforms a simple content generation pipeline into a goal-oriented, self-correcting system.
+An intelligent, stateful microservice that serves as the central orchestrator for the CVisionary resume-building platform. This service leverages AI to understand user intents, manage conversation state, and coordinate with specialized backend services to deliver a seamless resume-building experience.
 
-## Overview
+## 🚀 Overview
 
-The Agentic Orchestrator is the "brain" of the CVisionary ecosystem. Instead of just following a static set of instructions, it operates on a dynamic, goal-driven loop. Its primary objective is not just to create a resume, but to create a *high-scoring* resume. It does this by generating content, evaluating its own work using the Scoring Service, and then reasoning about the feedback to plan and execute targeted improvements.
+The Orchestrator Service is the primary interface for the CVisionary platform, providing a powerful chat-based interface for resume building and refinement. Key features include:
 
-This service is the key to producing truly high-quality, tailored output that goes beyond a single-pass generation.
+- Natural language understanding of complex resume-related requests
+- Stateful conversation management using Redis
+- Integration with specialized AI services for content generation and analysis
+- Autonomous planning and execution of multi-step resume building tasks
+- Real-time feedback and scoring of resume content
 
-## Core Concepts & Architecture
-
-The orchestrator operates on a classic agentic loop: **Observe → Evaluate → Reason → Refine**.
-
-### 1. Generate (Initial Action)
-
-It first calls the `Generator Service` to produce an initial draft of the resume based on the user's profile and the target job description.
-
-### 2. Evaluate (Observe)
-
-It then sends this draft to the `Scoring Service` to get an objective, quantitative analysis—the final score, semantic score, keyword score, and a list of missing keywords.
-
-### 3. Reason (Plan)
-
-The agent compares the current score to its `target_score`. If the score is too low, it analyzes the feedback, specifically the `missing_keywords`, to understand *why* the score is low. It then formulates a new, more specific prompt for the generator, instructing it to focus on the identified weaknesses.
-
-### 4. Refine (Act)
-
-It calls the `Generator Service` again with the new, improved prompt, creating a refined version of the resume.
-
-### 5. Repeat
-
-The loop continues until the target score is met or the maximum number of refinement attempts is reached.
-
-### System Flow Diagram
+## 🏗️ Architecture
 
 ```mermaid
-sequenceDiagram
-    participant Client
-    participant Orchestrator
-    participant GeneratorService
-    participant ScoringService
-
-    Client->>Orchestrator: POST /agent/generate-and-refine
+graph TD
+    A[User Request] --> B[Orchestrator Service]
+    B --> C[Gemini LLM]
+    B --> D[Redis Session Store]
+    B --> E[Retrieval Service]
+    B --> F[Generator Service]
+    B --> G[Scoring Service]
     
-    Orchestrator->>GeneratorService: (1) Generate Initial Draft
-    GeneratorService-->>Orchestrator: Resume v1 (JSON text)
-    
-    Orchestrator->>ScoringService: (2) Score Resume v1
-    ScoringService-->>Orchestrator: Score: 0.75, Missing: ["K8s", "Terraform"]
-    
-    loop Refinement Loop (if score < target)
-        Orchestrator->>Orchestrator: (3) Reason: "Score is low. Must add K8s & Terraform."
-        Orchestrator->>GeneratorService: (4) Regenerate with refined prompt
-        GeneratorService-->>Orchestrator: Resume v2 (JSON text)
-        
-        Orchestrator->>ScoringService: (5) Score Resume v2
-        ScoringService-->>Orchestrator: Score: 0.91, Missing: []
-    end
-    
-    Orchestrator-->>Client: Final Response (Resume v2, Score, History)
+    style A fill:#f9f,stroke:#333
+    style B fill:#bbf,stroke:#333
+    style C fill:#f9f,stroke:#333
+    style D fill:#9f9,stroke:#333
+    style E fill:#ff9,stroke:#333
+    style F fill:#f99,stroke:#333
+    style G fill:#99f,stroke:#333
 ```
 
-## Technology Stack
+## 🛠️ Technology Stack
 
-- **FastAPI**: For the web framework and API endpoints
-- **Pydantic**: For robust data validation and schema definition
-- **HTTPX**: For efficient, asynchronous communication with downstream services
-- **Python-dotenv**: For managing environment variables
+The service leverages a modern, production-ready technology stack:
 
-## Getting Started
+-   **FastAPI**: High-performance, asynchronous web framework for the API layer.
+-   **LangChain**: The core framework for building and managing the LLM-powered agent, its tools, and its memory.
+-   **Google Gemini**: The advanced language model (`gemini-1.5-pro-latest`) that powers the agent's reasoning and tool-using capabilities.
+-   **Redis**: Handles durable and fast session management, storing both conversation history and the in-progress resume state.
+-   **Pydantic**: Provides robust data validation for API requests/responses and internal data structures.
+-   **HTTPX**: Enables efficient, asynchronous communication with all downstream microservices.
+
+## Architecture & Core Concepts
+
+The Orchestrator Service is the central coordinator in a microservices ecosystem. It receives user requests, uses an LLM agent to decide on a course of action, and calls other services to execute specific tasks like data retrieval, content generation, or scoring.
+
+```mermaid
+graph TD
+    Title["<strong>Orchestrator Service Flow (Agent Logic)</strong>"]
+    style Title fill:#222,stroke:#333,stroke-width:2px,color:#fff
+
+    Title --> UserClient["User Client (Web UI)"]
+
+    subgraph Orchestrator Service
+        UserClient -- "(1) POST /v1/chat (user_message, session_id)" --> AgentReasoning{Agent Reasoning Loop}
+
+        AgentReasoning -- "(2) Sends prompt to LLM" --> GeminiAPI["Google Gemini API"]
+        GeminiAPI -- "(3) LLM returns a tool-use decision" --> AgentReasoning
+
+        AgentReasoning -- "(4a) DECISION: Use a tool" --> ToolExecution["Execute Chosen Tool"]
+
+        subgraph "Available Tools (connect to other services)"
+            ToolExecution --> Redis["Redis (get/update state)"]
+            ToolExecution --> RetrievalService["Retrieval Service"]
+            ToolExecution --> GeneratorService["Generator Service"]
+            ToolExecution --> ScoringService["Scoring Service"]
+        end
+
+        %% The crucial loop back to continue the cycle
+        ToolExecution -- "(5) Tool result is fed back for next step" --> AgentReasoning
+
+        %% The exit condition of the loop
+        AgentReasoning -- "(4b) DECISION: Task is complete" --> FinalResponse["Formulate Final Response"]
+        FinalResponse -- "(6) Returns ChatResponse to user" --> UserClient
+    end
+```
+
+## 🧠 Core Components
+
+### 1. LangChain Agent
+
+The service's intelligence is powered by a LangChain agent that follows a structured workflow:
+
+1. **Generate**: Create content using the Generator Service
+2. **Update**: Save the generated content to the session state
+3. **Score**: Evaluate the content against the job description
+4. **Decide**: Determine if the content meets quality standards
+
+### 2. Session Management
+
+State is maintained using Redis with two key components:
+
+- **Conversation History**: Tracks the dialog between user and agent
+- **Session Context**: Maintains the current state of the resume being built
+
+### 3. Tool Integration
+
+The agent interacts with external services through a set of specialized tools:
+
+| Tool | Description |
+|------|-------------|
+| `retrieve_context_tool` | Fetches relevant user profile information |
+| `generate_text_tool` | Generates new resume content |
+| `score_resume_text_tool` | Evaluates resume quality |
+| `update_resume_in_memory_tool` | Saves changes to the resume state |
+-   `generate_text_tool`: Calls the **Generator Service** to create new or revised text for a resume section.
+-   `get_full_resume_text_tool`: Compiles the entire resume from Redis into a single string, which is required for the scoring tool.
+-   `score_resume_text_tool`: Calls the **Scoring Service** to get a match score and identify missing keywords.
+-   `get_improvement_suggestions_tool`: Calls the **Scoring Service** to get AI-powered improvement tips if the score is low.
+-   `update_resume_in_memory_tool`: **A critical step.** The agent uses this tool to save newly generated content back into the `resume_state` in Redis.
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
 - Python 3.9+
-- All downstream CVisionary services must be running and accessible:
-  - `embedding-service`
-  - `retrieval-service`
-  - `generator-service`
-  - `scoring-service`
+- Redis server
+- Google Gemini API key
+- Running instances of all CVisionary microservices
 
-### Local Setup
+### Local Development Setup
 
-1. **Clone the repository and navigate to the service directory:**
+1. **Clone the repository**
    ```bash
-   git clone <repository-url>
-   cd <repository-directory>/orchestrator
+   git clone https://github.com/your-org/cvisionary.git
+   cd cvisionary/Agent/orchestrator
    ```
 
-2. **Create and activate a virtual environment:**
+2. **Set up a virtual environment**
    ```bash
+   # Windows
    python -m venv venv
-   # On Windows:
    .\venv\Scripts\activate
-   # On Unix or MacOS:
+   
+   # Unix/MacOS
+   python3 -m venv venv
    source venv/bin/activate
    ```
 
-3. **Install dependencies:**
+3. **Install dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Configure Environment Variables:**
-   Create a `.env` file in the `orchestrator/` directory. You can copy the contents of `.env.example`:
+4. **Configure environment**
+   Create a `.env` file with the following variables:
+   ```env
+   # Core Configuration
+   GEMINI_API_KEY=your_api_key_here
+   REDIS_URL=redis://localhost:6379
+   
+   # Service Endpoints
+   GENERATION_SERVICE_URL=http://localhost:8003
+   RETRIEVAL_SERVICE_URL=http://localhost:8002
+   SCORING_SERVICE_URL=http://localhost:8004
+   
+   # Application Settings
+   LOG_LEVEL=INFO
+   DEBUG=false
+   ```
 
-    ```env
-    # .env
-    # The port this orchestrator service will run on
-    PORT=8005
+5. **Run the service**
+   ```bash
+   uvicorn app:app --host 0.0.0.0 --port 8080 --reload
+   ```
+   
+   The API documentation will be available at:  
+   http://localhost:8080/docs
 
-    # REQUIRED: URLs of the downstream services
-    GENERATOR_SERVICE_URL="http://localhost:8003"
-    SCORING_SERVICE_URL="http://localhost:8004"
+## 📚 API Reference
 
-    # Agentic Loop Configuration
-    AGENT_TARGET_SCORE=0.88
-    AGENT_MAX_REFINEMENTS=2
-    LOG_LEVEL="INFO"
-    ```
+### Chat Endpoint
 
-5.  **Run the service:**
-    ```bash
-    uvicorn app.main:app --host 0.0.0.0 --port 8005 --reload
-    ```
-    The service will be available at `http://localhost:8005`. The API documentation can be found at `http://localhost:8005/docs`.
+#### `POST /v1/chat`
 
-## 📚 API Documentation
+Primary endpoint for interacting with the resume-building agent.
 
-### Main Endpoint
+**Request Body (JSON):**
 
-#### Generate and Refine Resume
-Triggers the full agentic process. The agent will work autonomously until it meets its goal or runs out of attempts.
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `session_id` | string | Yes | Unique identifier for the conversation |
+| `user_message` | string | Yes | The user's input message |
+| `user_id` | string | First msg | User identifier |
+| `job_description` | string | First msg | Target job description |
 
--   **Endpoint:** `POST /agent/generate-and-refine`
--   **Request Body:**
+**Example Request:**
 
-    ```json
-    {
-      "user_id": "string",
-      "job_description": "string",
-      "target_score": "float (optional)",
-      "max_refinements": "integer (optional)"
-    }
-    ```
-    -   `user_id`: The user's profile to use for context.
-    -   `job_description`: The target job posting.
-    -   `target_score` (optional): Override the default `AGENT_TARGET_SCORE` for this specific request.
-    -   `max_refinements` (optional): Override the default `AGENT_MAX_REFINEMENTS` for this request.
+```bash
+curl -X POST "http://localhost:8080/v1/chat" \
+-H "Content-Type: application/json" \
+-d '{
+  "session_id": "unique-session-123",
+  "user_message": "Create a resume for a senior developer position.",
+  "user_id": "user-456",
+  "job_description": "Looking for an experienced developer with Python and cloud experience..."
+}'
+```
 
--   **cURL Example:**
+**Success Response (200 OK):**
 
-    ```bash
-    curl -X 'POST' \
-      'http://localhost:8005/agent/generate-and-refine' \
-      -H 'Content-Type: application/json' \
-      -d '{
-        "user_id": "user-123-test",
-        "job_description": "We are hiring a Senior Cloud & DevOps Engineer with expertise in AWS, Kubernetes, and Terraform. Responsibilities include designing robust CI/CD pipelines using GitLab CI and managing containerized applications with Docker.",
-        "target_score": 0.90
-      }'
-    ```
+```json
+{
+  "agent_response": "I've created a draft resume for you. Let me know if you'd like to make any changes!",
+  "session_id": "unique-session-123",
+  "resume_state": {
+    "summary": "Results-driven Senior Developer with 7+ years of experience...",
+    "experience": [
+      {
+        "title": "Senior Software Engineer",
+        "company": "Tech Corp Inc.",
+        "duration": "2020-Present",
+        "achievements": [
+          "Led a team of 5 developers...",
+          "Reduced API response time by 40%..."
+        ]
+      }
+    ]
+  }
+}
+```
 
--   **Success Response (200 OK):**
-    The response provides the final result along with a full audit trail of the agent's process.
+**Error Responses:**
 
-    ```json
-    {
-      "status": "Completed: Target score of 0.9 met or exceeded.",
-      "final_resume": {
-        "summary": "A highly skilled Cloud & DevOps Engineer...",
-        "experience": [...],
-        "skills": { "technical": ["AWS", "Kubernetes", ...], "soft": [...] }
-      },
-      "final_score": 0.925,
-      "refinement_history": [
-        {
-          "attempt": 0,
-          "reasoning": "Initial draft generation.",
-          "final_score": 0.781,
-          "semantic_score": 0.82,
-          "keyword_score": 0.75,
-          "missing_keywords": ["Kubernetes", "Terraform"]
-        },
-        {
-          "attempt": 1,
-          "reasoning": "Refining based on low score. Key missing keywords: Kubernetes, Terraform.",
-          "final_score": 0.925,
-          "semantic_score": 0.91,
-          "keyword_score": 0.94,
-          "missing_keywords": []
-        }
-      ]
-    }
-    ```
-    -   `refinement_history`: This array is the proof of the agent's work, showing its reasoning and the score improvement at each step.
+- `400 Bad Request`: Missing required fields or invalid input
+- `500 Internal Server Error`: An unexpected error occurred
 
-### Utility Endpoints
--   `GET /health`: A simple health check endpoint.
+### Health Check
 
-## ⚙️ Configuration
+#### `GET /health`
 
-The agent's behavior can be tuned via environment variables in the `.env` file:
+Verify service health and dependencies.
 
-| Variable                | Description                                                              | Default |
-| ----------------------- | ------------------------------------------------------------------------ | ------- |
-| `PORT`                  | The port on which the orchestrator service runs.                         | `8005`  |
-| `GENERATOR_SERVICE_URL` | The full URL of the running `generator-service`.                         | `n/a`   |
-| `SCORING_SERVICE_URL`   | The full URL of the running `scoring-service`.                           | `n/a`   |
-| `AGENT_TARGET_SCORE`    | The minimum score the agent aims for before stopping.                    | `0.88`  |
-| `AGENT_MAX_REFINEMENTS` | The maximum number of improvement loops the agent will attempt.          | `2`     |
-| `LOG_LEVEL`             | The logging level for the service (e.g., `INFO`, `DEBUG`).               | `INFO`  |
+**Response:**
 
-## ⚠️ Error Handling
+```json
+{
+  "status": "healthy",
+  "service": "orchestrator-service",
+  "redis_connected": true,
+  "version": "1.0.0",
+  "timestamp": "2025-06-22T10:00:00Z"
+}
+```
 
--   `502 Bad Gateway`: This indicates that a downstream service (`Generator` or `Scorer`) is either unavailable or returned a server-side error. Check the logs of the downstream services for more details.
--   `500 Internal Server Error`: An unexpected error occurred within the orchestrator's agentic loop. Check the orchestrator's logs.
+## 🔄 Workflow Example
+
+### Rewriting a Resume Section
+
+1. **User Request**  
+   *"Rewrite my experience section to better match the job description."*
+
+2. **Agent Processing**
+   - Validates session and retrieves conversation history
+   - Identifies the need to update the experience section
+   
+3. **Context Retrieval**  
+   Fetches relevant user data and previous resume content
+   
+4. **Content Generation**  
+   Creates improved content using the Generator Service
+   
+5. **Quality Assurance**
+   - Saves the new content
+   - Scores it against the job description
+   - Makes improvements if needed
+   
+6. **Response**  
+   Returns the updated resume with a success message
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant O as Orchestrator
+    participant G as Generator
+    participant S as Scoring
+    
+    U->>O: Rewrite my experience section
+    O->>O: Validate session
+    O->>G: Generate improved content
+    G-->>O: New experience text
+    O->>S: Score the updated resume
+    S-->>O: Quality score & feedback
+    O-->>U: Success! Here's your improved resume
+```
 
 ## 📁 Project Structure
 
 ```
 orchestrator/
-├── .env.example          # Example environment variables
-├── requirements.txt      # Python dependencies
+├── .env                     # Environment configuration (gitignored)
+├── requirements.txt         # Python dependencies
+├── README.md                # This documentation
 └── app/
-    ├── __init__.py
-    ├── main.py           # FastAPI application, endpoint, and lifecycle
-    ├── agent.py          # The core agentic loop and refinement logic
-    ├── clients.py        # Functions for calling downstream services
-    ├── schemas.py        # Pydantic models for the orchestrator
-    └── config.py         # Configuration loading and management
+    ├── __init__.py          # Package initialization
+    ├── app.py               # FastAPI application and routes
+    ├── agent.py             # LangChain agent implementation
+    ├── tools.py             # Agent tool definitions
+    ├── memory.py            # Redis session management
+    ├── schemas.py           # Pydantic models
+    └── config.py            # Application configuration
 ```
+
+## 🛠️ Development
+
+### Running Tests
+
+```bash
+pytest tests/
+```
+
+### Code Style
+
+This project uses `black` for code formatting and `flake8` for linting:
+
+```bash
+black .
+flake8 .
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
