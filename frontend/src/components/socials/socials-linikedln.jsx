@@ -246,7 +246,9 @@ const LinkedInUpload = ({ darkMode }) => {
     console.log(parsedResume)
 
     try {
-      const response=await axios.post(`${import.meta.env.VITE_DEV_URL}Scrapper/linkedin/data`,{userId:decoded.userId,fullname: parsedResume.data.personalInfo.name,
+      const response=await axios.post(`${import.meta.env.VITE_DEV_URL}Scrapper/linkedin/data`,{
+        userId:decoded.userId,
+        fullname: parsedResume.data.personalInfo.name,
       headline: parsedResume.data.personalInfo.title,
       summary: parsedResume.data.summary,
       experience: parsedResume.data.experience,

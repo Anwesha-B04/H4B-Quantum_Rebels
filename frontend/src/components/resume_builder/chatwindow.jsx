@@ -3,6 +3,8 @@ import SkeletonLoader from "./skeletonloader";
 import PlanningPhase from "./planningphase";
 import WorkingPhase from "./workingphase";
 import { Paperclip, SendHorizonal } from "lucide-react";
+import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 
 export default function ChatWindow({ darkMode, setLivePreview }) {
   const [messages, setMessages] = useState([
@@ -17,6 +19,21 @@ export default function ChatWindow({ darkMode, setLivePreview }) {
   const [file, setFile] = useState(null);
 
   const containerRef = useRef(null);
+  const token=window.localStorage.getItem("tokenCV")
+  const decoded=jwtDecode(token)
+  console.log(decoded)
+
+  const fetchdata=async()=>{
+    try {
+      const response=await axios.post(`${import.meta.env.VITE_DEV_URL}Scrapper/linkedin/profile`,{userId:decoded.userId})
+      console.log(response)
+    } catch (error) {
+      console.error(error)
+    }
+  }
+  useEffect(()=>{
+    fetchdata()
+  },[])
 
   // auto‑scroll on new content
   useEffect(() => {
@@ -24,6 +41,7 @@ export default function ChatWindow({ darkMode, setLivePreview }) {
     if (container) {
       container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
     }
+
   }, [messages, loading, typing]);
 
   const handleSend = () => {
