@@ -40,7 +40,7 @@ async def get_http_client() -> httpx.AsyncClient:
 async def create_test_profile(profile: schemas.CreateProfileRequest):
     from bson import ObjectId
     
-    user_id = str(ObjectId()
+    user_id = str(ObjectId())
     profile_data = profile.dict()
     profile_data["_id"] = user_id
     profile_data["created_at"] = datetime.utcnow()
