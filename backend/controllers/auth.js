@@ -2,23 +2,25 @@ import User from '../models/auth_user.js';
 import bycrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+dotenv.config()
 
 
 const registerUser = async (req, res) => {
   const { username, useremail, userpassword } = req.body;
+  
   try {
     try {
 
       const checkuserEmail = await User.findOne({ userEmail: useremail });
       if (checkuserEmail) {
-        return res.status(400).json({
+        return res.json({
           success: false,
           message: "Email already exists",
         })
       }
       const checkuserName = await User.findOne({ userName: username });
       if (checkuserName) {
-        return res.status(400).json({
+        return res.json({
           success: false,
           message: " Username already exists",
         })
@@ -33,26 +35,26 @@ const registerUser = async (req, res) => {
         userPassword: hashedPassword,
       })
 
-      // const accessToken = jwt.sign({
-      //   username : username,
-      //   userId :_id,
-      //   useremail : useremail
-      // } ,
-      //  process.env.JWT_SECRET, 
-      //  {expiresIn: '1d'}
-      // );
+      const accessToken = jwt.sign({
+        username : username,
+        
+        useremail : useremail
+      } ,
+       process.env.JWT_SECRET, 
+       {expiresIn: '1d'}
+      );
 
       if (newUser) {
         return res.status(201).json({
           success: true,
           message: "User registered successfully",
-          // accessToken: accessToken
+          accessToken: accessToken
         })
       }
     }
     catch (error) {
       console.log(error);
-      return res.status(400).json({
+      return res.json({
         success: false,
         message: "User is not registered",
       })
@@ -83,7 +85,7 @@ const loginController = async (req, res) => {
       }
       const checkPassword = await bycrypt.compare(userpassword, checkuser.userPassword)
       if (!checkPassword) {
-        return res.status(401).json({
+        return res.json({
           success: false,
           message: "Invalid Password"
         })

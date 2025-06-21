@@ -1,14 +1,17 @@
 import express from "express"
+import cors from "cors"
 import connectToDB from "./db/db.js"
 import JobRouter from "./Routes/JobRoutes.js";
 import ResumeRouter from "./Routes/ResumeRoutes.js";
 import UserRouter from "./Routes/UserRoutes.js";
 import ReviewsRouter from "./Routes/Reviews.js";
+
+
 const app = express()
 const port = 8080
 
 app.use(express.json());
-app.use(cookieParser());
+
 app.use(cors({
   origin: "*",
   credentials: true,
