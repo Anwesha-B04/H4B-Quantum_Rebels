@@ -8,14 +8,13 @@ from langchain.tools import tool
 from pydantic import ValidationError
 
 from .memory import get_session_context, update_session_context
-# --- FIX: Import ChunkItem and ScoreResponse directly for type hinting ---
 from .schemas import RetrieveResponse, GenerateResponse, ScoreResponse, SuggestionResponse, ChunkItem
 
+# --- FIX: Updated default URLs to match the correct service ports ---
 SCORING_SERVICE_URL = os.getenv("SCORING_SERVICE_URL", "http://localhost:8004")
 RETRIEVAL_SERVICE_URL = os.getenv("RETRIEVAL_SERVICE_URL", "http://localhost:8002")
-GENERATION_SERVICE_URL = os.getenv("GENERATION_SERVICE_URL", "http://localhost:8000")
+GENERATION_SERVICE_URL = os.getenv("GENERATION_SERVICE_URL", "http://localhost:8003") # Corrected from 8000
 
-# --- FIX: Corrected the type hint to use the explicit ChunkItem model ---
 def format_context_for_prompt(chunks: List[ChunkItem]) -> str:
     """Formats retrieved chunks into a human-readable context string."""
     if not chunks:
@@ -39,6 +38,7 @@ class ToolBox:
         This single tool handles the entire process: retrieving context, generating the full resume,
         saving it, scoring it, and returning a summary of the result.
         """
+        # --- FIX: The tool now correctly gets its context from Redis ---
         context_data = get_session_context(self.session_id)
         if not context_data: return "Error: Session not found. Cannot create resume."
 
@@ -75,6 +75,7 @@ class ToolBox:
             f"The resume has been saved to your session."
         )
 
+    # ... (rest of the tools file remains the same) ...
     async def _score_resume_text_tool(self, resume_text: str) -> str:
         """Use this tool to explicitly re-score a resume's text if the user provides new text or asks for a re-evaluation."""
         context = get_session_context(self.session_id)
