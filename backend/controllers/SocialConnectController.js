@@ -42,4 +42,12 @@ const githubRepo = async (req, res) => {
   }
 };
 
-export { githubScrapper ,githubRepo};
+const linkedinData=async(req,res)=>{
+  const {fullname , headline  , summary ,experience  , skills , source , certifcations}=req.body;
+  
+}
+
+
+
+
+export { githubScrapper ,githubRepo };
