@@ -18,7 +18,7 @@ function Navbar({ isLoggedIn, darkMode, setDarkMode }) {
     try {
       window.localStorage.removeItem("tokenCV");
       const auth = getAuth();
-      await signOut(auth); // Firebase logout
+      await signOut(auth); 
 
       localStorage.clear();
       sessionStorage.clear();
@@ -105,7 +105,7 @@ function Navbar({ isLoggedIn, darkMode, setDarkMode }) {
               Resume Checker
             </a>
 
-            {/* ✅ Show user profile image & name */}
+            
             {userData && (
               <div className="flex items-center space-x-2">
                 <img

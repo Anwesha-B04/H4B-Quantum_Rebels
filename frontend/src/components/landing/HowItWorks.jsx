@@ -39,7 +39,7 @@ function HowItWorks({ darkMode }) {
       </motion.h2>
 
       <div className="flex flex-col lg:flex-row items-start justify-between gap-12">
-        {/* Left Text Section */}
+        
         <motion.div
           className="lg:w-1/2 mt-6 ml-10"
           initial={{ opacity: 0, y: 30 }}
@@ -78,7 +78,7 @@ function HowItWorks({ darkMode }) {
           </motion.div>
         </motion.div>
 
-        {/* Right YouTube Embed or Thumbnail */}
+        
         <motion.div
           className="lg:w-1/2 w-full flex justify-center mt-6"
           initial={{ opacity: 0, y: 40 }}

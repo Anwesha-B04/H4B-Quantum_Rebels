@@ -96,7 +96,7 @@ export default function ChatWindow({ darkMode, setLivePreview }) {
 
   return (
     <div className="flex flex-col justify-between h-full px-4 py-2">
-      {/* scrollable container: overflow-y + scrollbar-hide */}
+      
       <div
         ref={containerRef}
         className="flex flex-col space-y-2 overflow-y-auto scrollbar-hide pb-4"
