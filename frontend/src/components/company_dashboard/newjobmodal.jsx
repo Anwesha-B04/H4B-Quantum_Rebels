@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import axios from 'axios';
+import { jwtDecode } from 'jwt-decode';
 
 const NewJobModal = ({ isOpen, onClose, onSave, darkMode }) => {
+  const [userId, setuserId] = useState("")
+
+  const token = window.localStorage.getItem("tokenCV");
+      const decoded = jwtDecode(token);
+      console.log("jwt:", decoded);
   
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -11,18 +18,26 @@ const NewJobModal = ({ isOpen, onClose, onSave, darkMode }) => {
   const [jobType, setJobType] = useState('');
   const [stipend, setStipend] = useState('');
 
-  const handleSubmit = () => {
-    const formData = {
-      title,
-      description,
-      company,
-      location,
-      category,
-      jobType,
-      stipend
-    };
+  const handleSubmit = async(e) => {
+    e.preventDefault()
 
-    onSave(formData);
+    try {
+      const response=await axios.post(`${import.meta.env.VITE_DEV_URL}jobs/create`,{userId:decoded.userId,
+        JobTitle:title,
+      JobDescription:description,
+      CompanyName:company,
+      Location :location,
+      Cateogory:category,
+      JobType :jobType,
+      Stipend:stipend
+    })
+
+      console.log(response)
+    } catch (error) {
+      console.error(error)
+
+      
+    }
 
     
     setTitle('');

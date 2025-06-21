@@ -31,13 +31,13 @@ const JobsList = ({ jobs, darkMode }) => {
                   : "bg-white text-gray-900 border border-gray-200"
               }`}
           >
-            <h3 className="text-2xl font-bold mb-2">{job.title}</h3>
-            <p className="text-md mb-1">{job.company}</p>
-            <p className="text-md mb-1">{job.location}</p>
+            <h3 className="text-2xl font-bold mb-2">{job.JobTitle}</h3>
+            <p className="text-md mb-1">{job.CompanyName}</p>
+            <p className="text-md mb-1">{job.Location}</p>
             <p className="text-md mb-1">
-              {job.jobType} | ₹{job.stipend}
+              {job.JobType} | ₹{job.Stipend}
             </p>
-            <p className="text-md mt-2">{job.description.slice(0, 80)}...</p>
+            <p className="text-md mt-2">{job.JobDescription.slice(0, 80)}...</p>
           </div>
         ))}
       </div>

@@ -2,9 +2,9 @@ import mongoose  from "mongoose";
 
 const JobSchema = new mongoose.Schema({
      userId : {
-      type : mongoose.Schema.Types.ObjectId,
-      ref: "Auth_User",
-      required : true ,
+      type :String,
+      
+      
      },
      JobTitle : {
       type : String ,
