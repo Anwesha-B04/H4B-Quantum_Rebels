@@ -1,4 +1,3 @@
-# --- START OF FILE app.py ---
 from fastapi import FastAPI, HTTPException, Depends
 from contextlib import asynccontextmanager
 import httpx
@@ -39,18 +38,9 @@ async def get_http_client() -> httpx.AsyncClient:
     status_code=201,
 )
 async def create_test_profile(profile: schemas.CreateProfileRequest):
-    """
-    Create a test user profile in the database.
-    
-    This is a testing endpoint to create sample profiles for development.
-    In production, profiles should be created through the main application.
-    """
     from bson import ObjectId
     
-    # Generate a new ObjectId
-    user_id = str(ObjectId())
-    
-    # Convert the profile to a dictionary and add metadata
+    user_id = str(ObjectId()
     profile_data = profile.dict()
     profile_data["_id"] = user_id
     profile_data["created_at"] = datetime.utcnow()
@@ -66,10 +56,6 @@ async def create_test_profile(profile: schemas.CreateProfileRequest):
     "/index/profile/{user_id}", response_model=schemas.IndexProfileResponse, tags=["Indexing"]
 )
 async def index_user_profile(user_id: str):
-    """
-    Triggers the indexing of a user's profile, reading data directly from the database.
-    This endpoint should be called by the MERN backend after it saves a profile.
-    """
     try:
         total_chunks = await services.index_profile_from_db(user_id)
         return {"status": "success", "message": f"Profile indexed successfully into {total_chunks} chunks."}

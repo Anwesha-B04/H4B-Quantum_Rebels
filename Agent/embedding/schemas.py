@@ -38,7 +38,6 @@ class Profile(ProfileBase):
         }
 
 class CreateProfileRequest(ProfileBase):
-    """Schema for creating a new profile."""
     pass
 
 class IndexProfileResponse(BaseModel):
