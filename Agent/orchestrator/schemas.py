@@ -17,7 +17,6 @@ class HealthResponse(BaseModel):
     status: str
     service: str
     redis_connected: bool
-
 class ChunkItem(BaseModel):
     chunk_id: str
     user_id: str
