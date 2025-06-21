@@ -83,7 +83,7 @@ export default function ChatWindow({ darkMode, setLivePreview }) {
         key={idx}
         className={`max-w-[80%] px-4 py-3 my-1 mt-20 rounded-xl whitespace-pre-wrap ${
           msg.from === "user"
-            ? "bg-[#2563eb] text-white self-end ml-auto"
+            ? "bg-[#1E1B3A] text-white self-end ml-auto"
             : darkMode
               ? "bg-[#181a2a] text-white"
               : "bg-[#e5e7eb] text-[#181A2A]"
@@ -134,7 +134,7 @@ export default function ChatWindow({ darkMode, setLivePreview }) {
           rows={1}
           className={`flex-1 px-4 py-2 rounded-lg outline-none resize-none ${
             darkMode
-              ? "bg-[#23243a] text-white placeholder:text-gray-400"
+              ? "bg-[#1E1B3A] text-white placeholder:text-gray-400"
               : "bg-white text-[#181A2A] placeholder:text-gray-500 border border-[#e5e7eb]"
           }`}
         />
