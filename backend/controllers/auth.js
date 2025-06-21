@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 
 
 const registerUser = async (req, res) => {
-  const { username, useremail, userpassword } = req.body;
+  const { username, useremail, userpassword, role } = req.body;
   try {
     try {
 
@@ -31,6 +31,7 @@ const registerUser = async (req, res) => {
         userName: username,
         userEmail: useremail,
         userPassword: hashedPassword,
+        role: role,
       })
 
       // const accessToken = jwt.sign({
@@ -71,10 +72,15 @@ const registerUser = async (req, res) => {
 const loginController = async (req, res) => {
   try {
     try {
-      const { useremail, userpassword } = req.body;
-      
+      const { useremail, userpassword , role } = req.body;
+
       const checkuser = await User.findOne({ userEmail: useremail });
-      
+
+
+      if (!user || user.role !== role) {
+        return res.status(401).json({ success: false, message: "Invalid credentials or role" });
+      }
+
       if (!checkuser) {
         return res.status(404).json({
           success: false,
@@ -90,21 +96,21 @@ const loginController = async (req, res) => {
       }
 
       const accessToken = jwt.sign({
-        username : checkuser.userName,
-        userId : checkuser._id,
-        useremail : checkuser.userEmail
-      } ,
-       process.env.JWT_SECRET, 
-       {expiresIn: '1d'}
+        username: checkuser.userName,
+        userId: checkuser._id,
+        useremail: checkuser.userEmail
+      },
+        process.env.JWT_SECRET,
+        { expiresIn: '1d' }
       );
 
       return res.status(200).json({
-        success : true ,
+        success: true,
         message: "User logged in successfully",
-        accessToken : accessToken,
-        user : checkuser
+        accessToken: accessToken,
+        user: checkuser
       })
-      
+
 
     }
     catch (error) {
@@ -127,4 +133,4 @@ const loginController = async (req, res) => {
 
 
 
-export  { registerUser , loginController };
+export { registerUser, loginController };

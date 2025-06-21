@@ -1,76 +1,126 @@
-import LoginImage from "../../assets/images/login.jpg";
 import React, { useState } from "react";
-
 import { useNavigate } from "react-router-dom";
+import LoginImage from "../../assets/images/login.jpg";
 import auth, { githubProvider, googleProvider, signInWithPopup } from "../../firebase";
 import axios from "axios";
+import { useUser } from "@civic/auth/react";
+import { getAuth, signOut as firebaseSignOut } from "firebase/auth"; // Added
 
 const Login = () => {
+  const [useremail, setemail] = useState("");
+  const [userpassword, setpassword] = useState("");
+  const [error, setError] = useState("");
+  const [role, setRole] = useState("");
 
-  const [useremail, setemail] = useState("")
-  const [ userpassword, setpassword] = useState("")
-  const [Error, setError] = useState("")
   const navigate = useNavigate();
+
+  const { user, signIn, isAuthenticated, isLoading } = useUser();
 
   const handleGoogleLogin = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      console.log("Google login successful: ", result.user);
-      // ✅ Save name to localStorage
-      localStorage.setItem("userName", result.user.displayName);
+      const userInfo = {
+        name: result.user.displayName,
+        picture: result.user.photoURL,
+      };
+      localStorage.setItem("cvisionary:user", JSON.stringify(userInfo));
       navigate("/dashboard");
-    } catch (error) {
-      console.error("Google login error: ", error.message);
+    } catch (err) {
+      console.error("Google login error:", err.message);
     }
   };
 
-  const handleGithubSignUp = async () => {
+  const handleGithubLogin = async () => {
     try {
       const result = await signInWithPopup(auth, githubProvider);
-      console.log("GitHub login successful: ", result.user);
-      // ✅ Save name to localStorage
-      localStorage.setItem("userName", result.user.displayName);
+      const userInfo = {
+        name: result.user.displayName,
+        picture: result.user.photoURL,
+      };
+      localStorage.setItem("cvisionary:user", JSON.stringify(userInfo));
       navigate("/dashboard");
-    } catch (error) {
-      if (error.code === "auth/account-exists-with-different-credential") {
-        alert("An account already exists with a different login method (like Google). Please use that to log in.");
+    } catch (err) {
+      if (err.code === "auth/account-exists-with-different-credential") {
+        alert("Account exists with another login method. Try Google.");
       } else {
-        console.error("GitHub login error:", error.message);
+        console.error("GitHub login error:", err.message);
         alert("GitHub login failed. Please try again.");
       }
     }
-  }; 
+  };
 
-  const handleSubmit = async(e) => {
-    e.preventDefault();
-    console.log("Form Submitted", { useremail, userpassword });
+  const handleCivicLogin = async () => {
     try {
-      const response=await axios.post(`${import.meta.env.VITE_DEV_URL}auth/login`,{useremail, userpassword})
-      
-      if(response.data.success){
-        localStorage.setItem("tokenCV", response.data.accessToken);
-        console.log("Login successful:", response.data.message);
+      // Prevent Firebase/Civic session clash
+      await firebaseSignOut(getAuth());
+
+      await signIn(); // Civic login
+      if (user) {
+        const userInfo = {
+          name: user.name || user.id || "CivicUser",
+          picture: user.picture || "",
+        };
+        localStorage.setItem("cvisionary:user", JSON.stringify(userInfo));
         navigate("/dashboard");
-      }else{
-        setError(response.data.message);
-        console.error("Login failed:", response.data.message);
+      } else {
+        alert("Civic login did not return user info.");
       }
-      
-    } catch (error) {
-      console.error("Login error:", error);
+    } catch (err) {
+      console.error("Civic login failed:", err);
+      alert("Civic login failed. Please try again.");
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_DEV_URL}auth/login`, {
+        useremail,
+        userpassword,
+      });
+
+      if (response.data.success) {
+        localStorage.setItem("tokenCV", response.data.accessToken);
+        localStorage.setItem(
+          "cvisionary:user",
+          JSON.stringify({ name: useremail, picture: "" }) // Optional avatar
+        );
+        navigate("/dashboard");
+      } else {
+        setError(response.data.message);
+      }
+    } catch (err) {
+      console.error("Login error:", err);
       setError("An error occurred during login. Please try again.");
-       setemail("");
+      setemail("");
       setpassword("");
     }
-  }
+  };
 
   return (
-    <div className="min-h-screen bg-[#0f0f1c] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#0f0f1c] flex items-center justify-center px-4 ">
       <div className="bg-[#1a1a2e] text-white rounded-2xl shadow-lg flex flex-col md:flex-row overflow-hidden w-full max-w-4xl">
         {/* Left Section */}
         <div className="flex-1 p-10">
           <h2 className="text-3xl font-bold mb-2">Welcome Back</h2>
           <p className="text-gray-400 mb-6">Login to your CVisionary account</p>
+
+          <div className="mb-4">
+            <label className="block mb-1 text-sm font-medium">Select Role</label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              required
+              className="w-full px-4 py-2 bg-[#2a2a40] border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+            >
+              <option value="" disabled>
+                -- Choose a role --
+              </option>
+              <option value="applicant">Applicant</option>
+              <option value="company">Company</option>
+            </select>
+          </div>
+
 
           <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
@@ -106,6 +156,7 @@ const Login = () => {
             >
               Login
             </button>
+            {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
           </form>
 
           <div className="my-6 flex items-center gap-2 text-gray-500 text-sm">
@@ -114,18 +165,27 @@ const Login = () => {
             <hr className="flex-1 border-gray-700" />
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex flex-col gap-4 mt-4">
+            <div className="flex flex-row gap-4">
             <button
-              onClick={handleGithubSignUp}
-              className="flex-1 bg-white text-black py-2 rounded-md hover:opacity-90 transition duration-300 font-medium"
+              onClick={handleGithubLogin}
+              className="w-full bg-white text-black py-2 rounded-md hover:opacity-90 transition duration-300 font-medium"
             >
               Login with GitHub
             </button>
+
             <button
               onClick={handleGoogleLogin}
-              className="flex-1 bg-blue-700 text-white py-2 rounded-md hover:bg-blue-800 transition duration-300 font-medium"
+              className="w-full bg-blue-700 text-white py-2 rounded-md hover:bg-blue-800 transition duration-300 font-medium"
             >
               Login with Google
+            </button>
+            </div>
+            <button
+              onClick={handleCivicLogin}
+              className="w-full bg-blue-700 text-white py-2 rounded-md hover:bg-blue-800 transition duration-300 font-medium"
+            >
+              Login with Civic
             </button>
           </div>
 
@@ -137,7 +197,7 @@ const Login = () => {
           </p>
         </div>
 
-        {/* Right Image Section */}
+        {/* Right Section */}
         <div className="hidden md:flex items-center justify-center bg-[#202030] w-full md:w-1/2">
           <img
             src={LoginImage}
