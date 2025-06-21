@@ -1,7 +1,3 @@
-Of course. Here is a detailed, professional README file for the Orchestrator service. It explains its unique agentic nature, how it works, and how to set it up and use it effectively.
-
----
-
 # CVisionary Agentic Orchestrator
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -16,15 +12,29 @@ The Agentic Orchestrator is the "brain" of the CVisionary ecosystem. Instead of 
 
 This service is the key to producing truly high-quality, tailored output that goes beyond a single-pass generation.
 
-## 🧠 Core Concepts & Architecture
+## Core Concepts & Architecture
 
-The orchestrator operates on a classic agentic loop: **Observe -> Evaluate -> Reason -> Refine**.
+The orchestrator operates on a classic agentic loop: **Observe → Evaluate → Reason → Refine**.
 
-1.  **Generate (Initial Action):** It first calls the `Generator Service` to produce an initial draft of the resume based on the user's profile and the target job description.
-2.  **Evaluate (Observe):** It then sends this draft to the `Scoring Service` to get an objective, quantitative analysis—the final score, semantic score, keyword score, and a list of missing keywords.
-3.  **Reason (Plan):** The agent compares the current score to its `target_score`. If the score is too low, it analyzes the feedback, specifically the `missing_keywords`, to understand *why* the score is low. It then formulates a new, more specific prompt for the generator, instructing it to focus on the identified weaknesses.
-4.  **Refine (Act):** It calls the `Generator Service` again with the new, improved prompt, creating a refined version of the resume.
-5.  **Repeat:** The loop continues until the target score is met or the maximum number of refinement attempts is reached.
+### 1. Generate (Initial Action)
+
+It first calls the `Generator Service` to produce an initial draft of the resume based on the user's profile and the target job description.
+
+### 2. Evaluate (Observe)
+
+It then sends this draft to the `Scoring Service` to get an objective, quantitative analysis—the final score, semantic score, keyword score, and a list of missing keywords.
+
+### 3. Reason (Plan)
+
+The agent compares the current score to its `target_score`. If the score is too low, it analyzes the feedback, specifically the `missing_keywords`, to understand *why* the score is low. It then formulates a new, more specific prompt for the generator, instructing it to focus on the identified weaknesses.
+
+### 4. Refine (Act)
+
+It calls the `Generator Service` again with the new, improved prompt, creating a refined version of the resume.
+
+### 5. Repeat
+
+The loop continues until the target score is met or the maximum number of refinement attempts is reached.
 
 ### System Flow Diagram
 
@@ -55,45 +65,48 @@ sequenceDiagram
     Orchestrator-->>Client: Final Response (Resume v2, Score, History)
 ```
 
-## 🚀 Technology Stack
+## Technology Stack
 
--   **FastAPI**: For the web framework and API endpoints.
--   **Pydantic**: For robust data validation and schema definition.
--   **HTTPX**: For efficient, asynchronous communication with downstream services.
--   **Python-dotenv**: For managing environment variables.
+- **FastAPI**: For the web framework and API endpoints
+- **Pydantic**: For robust data validation and schema definition
+- **HTTPX**: For efficient, asynchronous communication with downstream services
+- **Python-dotenv**: For managing environment variables
 
-## 🛠️ Getting Started
+## Getting Started
 
 ### Prerequisites
 
--   Python 3.9+
--   All downstream CVisionary services must be running and accessible:
-    -   `embedding-service`
-    -   `retrieval-service`
-    -   `generator-service`
-    -   `scoring-service`
+- Python 3.9+
+- All downstream CVisionary services must be running and accessible:
+  - `embedding-service`
+  - `retrieval-service`
+  - `generator-service`
+  - `scoring-service`
 
 ### Local Setup
 
-1.  **Clone the repository and navigate to the service directory:**
-    ```bash
-    git clone <repository-url>
-    cd <repository-directory>/orchestrator
-    ```
+1. **Clone the repository and navigate to the service directory:**
+   ```bash
+   git clone <repository-url>
+   cd <repository-directory>/orchestrator
+   ```
 
-2.  **Create and activate a virtual environment:**
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
-    ```
+2. **Create and activate a virtual environment:**
+   ```bash
+   python -m venv venv
+   # On Windows:
+   .\venv\Scripts\activate
+   # On Unix or MacOS:
+   source venv/bin/activate
+   ```
 
-3.  **Install dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+3. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-4.  **Configure Environment Variables:**
-    Create a `.env` file in the `orchestrator/` directory. You can copy the contents of `.env.example`.
+4. **Configure Environment Variables:**
+   Create a `.env` file in the `orchestrator/` directory. You can copy the contents of `.env.example`:
 
     ```env
     # .env
