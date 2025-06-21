@@ -42,6 +42,11 @@ const githubRepo = async (req, res) => {
   }
 };
 
+const linkedinData=async(req,res)=>{
+  const {fullname , headline  , summary ,experience  , skills , source , certifcations}=req.body;
+  
+}
+
 
 
 
