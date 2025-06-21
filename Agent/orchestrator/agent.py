@@ -1,64 +1,135 @@
-import os
-from langchain.agents import AgentExecutor
-from langchain.agents.format_scratchpad.openai_tools import format_to_openai_tool_messages
-from langchain.agents.output_parsers.openai_tools import OpenAIToolsAgentOutputParser
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.memory import ConversationBufferWindowMemory
+import logging
+import json
+from typing import List, Dict, Any, Optional
 
-from .tools import ToolBox
-from .memory import get_session_history
+import httpx
 
-SYSTEM_PROMPT = """You are an expert resume-building assistant. Your goal is to help a user create or refine a resume for a specific job by intelligently using the tools at your disposal.
+from . import clients, config
+from .schemas import RefinementStep
 
-**Your Process (CRITICAL):**
-1.  **Understand the Goal:** Analyze the user's request (e.g., "create a full resume", "rewrite my experience section").
-2.  **Gather & Generate:**
-    - Use `retrieve_context_tool` to get relevant context from the user's profile.
-    - If rewriting a section, use `get_current_resume_section_tool` to see the existing text.
-    - Use `generate_text_tool` to create a first draft of the content. This will return a JSON string.
-3.  **Update Resume In-Memory:** Immediately after generating, you **MUST** call `update_resume_in_memory_tool` to temporarily save the new draft. This is essential for the next step.
-4.  **SCORE THE DRAFT:** After saving the draft, you **MUST** call `score_resume_text_tool`.
-    - To do this, first call `get_full_resume_text_tool` to get the complete resume text (including your new draft).
-    - Then, pass this text to `score_resume_text_tool`.
-5.  **DECIDE BASED ON SCORE:**
-    - **If the score is high (e.g., > 0.80):** The draft is good. Inform the user that the content has been updated and has achieved a high match score.
-    - **If the score is low (e.g., <= 0.80):** The draft needs improvement.
-        a. Look at the `Missing Keywords` from the scoring tool's output.
-        b. Call `get_improvement_suggestions_tool` with these keywords.
-        c. Present the suggestions to the user. Ask them if they would like you to try rewriting the section again using these new ideas. **DO NOT** tell them the low-scoring draft is final.
-6.  **Final Response:** Always provide a clear, conversational response to the user summarizing what you did, the score, and any next steps.
-"""
+logger = logging.getLogger(__name__)
 
-def create_agent_executor(toolbox: ToolBox, session_id: str) -> AgentExecutor:
-    gemini_api_key = os.getenv("GEMINI_API_KEY")
-    if not gemini_api_key: raise ValueError("GEMINI_API_KEY environment variable is required")
-    
-    llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=gemini_api_key, temperature=0.0)
-    
-    tools = toolbox.get_tools()
-    
-    llm_with_tools = llm.bind_tools(tools)
-    
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", SYSTEM_PROMPT),
-        MessagesPlaceholder(variable_name="chat_history"),
-        ("user", "{input}"),
-        MessagesPlaceholder(variable_name="agent_scratchpad"),
-    ])
-    
-    chat_history = get_session_history(session_id)
-    agent = (
-        {
-            "input": lambda x: x["input"],
-            "agent_scratchpad": lambda x: format_to_openai_tool_messages(x["intermediate_steps"]),
-            "chat_history": lambda x: chat_history.messages,
-        }
-        | prompt
-        | llm_with_tools
-        | OpenAIToolsAgentOutputParser()
-    )
-    
-    memory = ConversationBufferWindowMemory(chat_memory=chat_history, memory_key="chat_history", return_messages=True, k=10)
-    
-    return AgentExecutor(agent=agent, tools=tools, memory=memory, verbose=True, handle_parsing_errors=True, max_iterations=15)
+class ResumeAgent:
+    """An agent that generates and iteratively refines a resume to meet a target score."""
+
+    def __init__(
+        self,
+        client: httpx.AsyncClient,
+        user_id: str,
+        job_description: str,
+        target_score: float,
+        max_refinements: int,
+    ):
+        self.client = client
+        self.user_id = user_id
+        self.original_job_description = job_description
+        self.current_job_description = job_description
+        self.target_score = target_score
+        self.max_refinements = max_refinements
+        
+        self.final_resume_json: Dict[str, Any] = {}
+        self.final_score: float = 0.0
+        self.refinement_history: List[RefinementStep] = []
+        self.status: str = "Initialized"
+
+    async def run(self):
+        """Executes the main agentic loop."""
+        logger.info(f"Agent starting for user {self.user_id}. Target score: {self.target_score}, Max refinements: {self.max_refinements}")
+
+        # --- Step 1: Initial Generation ---
+        logger.info("Phase 1: Initial resume generation.")
+        generated_text = await self._generate_resume()
+        
+        # --- Step 2: Initial Scoring and Evaluation ---
+        logger.info("Phase 2: Initial scoring and evaluation.")
+        score_data = await self._score_resume(generated_text)
+        self.final_score = score_data.final_score
+        self.final_resume_json = json.loads(generated_text)
+        
+        self._log_attempt(
+            attempt=0,
+            reasoning="Initial draft generation.",
+            score_data=score_data,
+        )
+
+        # --- Step 3: Refinement Loop ---
+        for i in range(self.max_refinements):
+            if self.final_score >= self.target_score:
+                self.status = f"Completed: Target score of {self.target_score} met or exceeded."
+                logger.info(self.status)
+                return
+
+            logger.info(f"Phase 3.{i+1}: Entering refinement loop. Current score {self.final_score} is below target {self.target_score}.")
+
+            # Plan the refinement
+            reason, refined_job_desc = self._plan_refinement(score_data.missing_keywords)
+            self.current_job_description = refined_job_desc
+            
+            # Execute the refinement
+            refined_text = await self._generate_resume()
+            
+            # Evaluate the refinement
+            score_data = await self._score_resume(refined_text)
+
+            # Decide whether to keep the new version
+            if score_data.final_score > self.final_score:
+                logger.info(f"Refinement successful. Score improved from {self.final_score:.3f} to {score_data.final_score:.3f}.")
+                self.final_resume_json = json.loads(refined_text)
+                self.final_score = score_data.final_score
+            else:
+                logger.warning(f"Refinement did not improve score. Keeping previous version. (New: {score_data.final_score:.3f}, Old: {self.final_score:.3f})")
+
+            self._log_attempt(
+                attempt=i + 1,
+                reasoning=reason,
+                score_data=score_data,
+            )
+
+        # --- Step 4: Final Status ---
+        if self.final_score >= self.target_score:
+            self.status = f"Completed: Target score of {self.target_score} met in final attempt."
+        else:
+            self.status = f"Completed: Maximum refinements ({self.max_refinements}) reached. Final score {self.final_score:.3f} is below target {self.target_score}."
+        
+        logger.info(self.status)
+
+    async def _generate_resume(self) -> str:
+        """Calls the generator client and returns the generated text."""
+        response = await clients.call_generator_service(
+            self.client, self.user_id, self.current_job_description
+        )
+        return response.generated_text
+
+    async def _score_resume(self, resume_text: str):
+        """Calls the scoring client and returns the score data."""
+        return await clients.call_scoring_service(
+            self.client, self.original_job_description, resume_text
+        )
+
+    def _plan_refinement(self, missing_keywords: List[str]):
+        """Creates a new prompt to guide the LLM for refinement."""
+        reasoning = f"Refining based on low score. Key missing keywords: {', '.join(missing_keywords[:5])}."
+        logger.info(f"Agent Reasoning: {reasoning}")
+
+        # This is where the agent "thinks". It modifies its own instructions for the next call.
+        refinement_instruction = (
+            "This is a refinement attempt. The previous version was good but lacked focus. "
+            f"Pay special attention to highlighting experience and skills related to these critical keywords: {', '.join(missing_keywords)}. "
+            "Integrate them naturally into the summary, experience, and skills sections.\n\n"
+            "--- Original Job Description ---\n"
+        )
+        
+        refined_job_description = refinement_instruction + self.original_job_description
+        return reasoning, refined_job_description
+
+    def _log_attempt(self, attempt: int, reasoning: str, score_data):
+        """Adds a step to the refinement history."""
+        step = RefinementStep(
+            attempt=attempt,
+            reasoning=reasoning,
+            final_score=score_data.final_score,
+            semantic_score=score_data.semantic_score,
+            keyword_score=score_data.keyword_score,
+            missing_keywords=score_data.missing_keywords,
+        )
+        self.refinement_history.append(step)
