@@ -28,15 +28,15 @@ const CompanyDashboard = () => {
         const decoded = jwtDecode(token);
         
   
-  const fetchJobs=async()=>{
-    try {
-      const response=await axios.get(`${import.meta.env.VITE_DEV_URL}jobs/all`,{userId:decoded.userId})
-      console.log(response)
-      setJobs(response.data)
-    } catch (error) {
-      console.error(error)
-    }
+  const fetchJobs = async () => {
+  try {
+    const response = await axios.get(`${import.meta.env.VITE_DEV_URL}jobs/all?userId=${decoded.userId}`)
+    console.log(response)
+    setJobs(response.data.jobs) 
+  } catch (error) {
+    console.error(error.message)
   }
+}
 
   useEffect(()=>{
     fetchJobs()
