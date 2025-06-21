@@ -1,85 +1,71 @@
-import logging
+# orchestrator/app.py
+from dotenv import load_dotenv
+load_dotenv()
+
+import os
+import traceback
 from contextlib import asynccontextmanager
 import httpx
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Depends
+from fastapi.middleware.cors import CORSMiddleware
 
-from . import config
-from .agent import ResumeAgent
-from .schemas import AgentRequest, AgentResponse
+from .schemas import ChatRequest, ChatResponse, HealthResponse
+from .agent import create_agent_executor
+from .tools import ToolBox
+from .memory import get_session_context, initialize_session_context
 
-# Configure logging
-logging.basicConfig(level=config.LOG_LEVEL, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-logger = logging.getLogger(__name__)
-
-# Application state
-app_state = {}
+# This shared client will be passed to the session-specific toolbox.
+http_client: httpx.AsyncClient = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Handles startup and shutdown events."""
-    logger.info("Starting up Orchestrator Service...")
-    app_state["http_client"] = httpx.AsyncClient()
-    logger.info("Orchestrator Service started successfully.")
+    global http_client
+    http_client = httpx.AsyncClient(timeout=90.0)
     yield
-    logger.info("Shutting down Orchestrator Service...")
-    await app_state["http_client"].aclose()
-    logger.info("Orchestrator Service shut down.")
+    await http_client.aclose()
 
-app = FastAPI(
-    title="CVisionary Agentic Orchestrator",
-    description="An agent that uses other CVisionary services to generate and refine resumes.",
-    version="1.0.0",
-    lifespan=lifespan
-)
+app = FastAPI(title="Orchestrator Agent Service", version="1.1.0-updated", lifespan=lifespan)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 def get_http_client() -> httpx.AsyncClient:
-    return app_state["http_client"]
+    return http_client
 
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy", "service": "orchestrator-service"}
-
-@app.post("/agent/generate-and-refine", response_model=AgentResponse)
-async def generate_and_refine_resume(
-    request: AgentRequest,
-    client: httpx.AsyncClient = Depends(get_http_client)
-):
-    """
-    Triggers the full agentic process to generate and iteratively refine a resume.
-    """
-    target_score = request.target_score or config.AGENT_TARGET_SCORE
-    max_refinements = request.max_refinements if request.max_refinements is not None else config.AGENT_MAX_REFINEMENTS
-    
-    agent = ResumeAgent(
-        client=client,
-        user_id=request.user_id,
-        job_description=request.job_description,
-        target_score=target_score,
-        max_refinements=max_refinements
-    )
-    
+@app.post("/v1/chat", response_model=ChatResponse)
+async def chat_endpoint(request: ChatRequest, client: httpx.AsyncClient = Depends(get_http_client)) -> ChatResponse:
     try:
-        await agent.run()
-    except httpx.HTTPError as e:
-        logger.error(f"A downstream service failed during agent execution: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"A downstream service is unavailable or returned an error: {e}"
+        session_context = get_session_context(request.session_id)
+        if not session_context:
+            if not request.user_id or not request.job_description:
+                raise HTTPException(status.HTTP_400_BAD_REQUEST, "For a new session, `user_id` and `job_description` are required.")
+            initialize_session_context(request.session_id, request.user_id, request.job_description)
+
+        # Create a new, session-specific toolbox for each request.
+        # This is the correct pattern as it encapsulates the session_id for all tool calls.
+        toolbox = ToolBox(client=client, session_id=request.session_id)
+        agent_executor = create_agent_executor(toolbox, request.session_id)
+        
+        response = await agent_executor.ainvoke({"input": request.user_message})
+        agent_response = response.get("output", "I'm sorry, I couldn't process your request.")
+        
+        # Retrieve the final state of the resume after the agent has run
+        final_context = get_session_context(request.session_id)
+        
+        return ChatResponse(
+            agent_response=agent_response,
+            session_id=request.session_id,
+            resume_state=final_context.get("resume_state", {})
         )
     except Exception as e:
-        logger.error(f"An unexpected error occurred in the agent loop: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An internal error occurred in the agent: {e}"
-        )
+        traceback.print_exc()
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Agent execution error: {e}")
 
-    return AgentResponse(
-        status=agent.status,
-        final_resume=agent.final_resume_json,
-        final_score=agent.final_score,
-        refinement_history=agent.refinement_history
-    )
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=config.PORT)
+@app.get("/health", response_model=HealthResponse)
+async def health_check() -> HealthResponse:
+    import redis
+    try:
+        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+        r = redis.from_url(redis_url)
+        r.ping()
+        return HealthResponse(status="healthy", service="orchestrator-service", redis_connected=True)
+    except Exception:
+        return HealthResponse(status="unhealthy", service="orchestrator-service", redis_connected=False)
