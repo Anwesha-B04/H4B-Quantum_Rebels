@@ -6,6 +6,7 @@ import axios from "axios";
 import { useUser } from "@civic/auth/react";
 import { getAuth, signOut as firebaseSignOut } from "firebase/auth"; 
 
+
 const Login = () => {
   const [useremail, setemail] = useState("");
   const [userpassword, setpassword] = useState("");
@@ -19,6 +20,10 @@ const Login = () => {
   const handleGoogleLogin = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
+
+      const idToken = await result.user.getIdToken();
+      localStorage.setItem("tokenCV", idToken);
+
       const userInfo = {
         name: result.user.displayName,
         picture: result.user.photoURL,
@@ -51,7 +56,7 @@ const Login = () => {
 
   const handleCivicLogin = async () => {
     try {
-      
+
 
       await signIn();
       if (user) {
@@ -60,6 +65,8 @@ const Login = () => {
           picture: user.picture || "",
         };
         localStorage.setItem("cvisionary:user", JSON.stringify(userInfo));
+
+
         navigate("/dashboard");
       } else {
         alert("Civic login did not return user info.");
