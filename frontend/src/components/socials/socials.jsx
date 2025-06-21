@@ -14,7 +14,7 @@ const SocialConnect = ({ darkMode }) => {
   }
 }, []);
 
-  // Theme classes
+  
   const bgClass = darkMode ? "bg-[#0D0C1D]" : "bg-white";
   const textClass = darkMode ? "text-white" : "text-gray-900";
   const subTextClass = darkMode ? "text-gray-300" : "text-gray-600";
@@ -30,7 +30,7 @@ const SocialConnect = ({ darkMode }) => {
 
   return (
     <div className={`min-h-screen flex flex-col items-center justify-center ${bgClass} ${textClass} px-4 transition-colors duration-300`}>
-      {/* Go to Dashboard Button */}
+      
       <div className="absolute top-24 right-6">
         <button
           onClick={() => navigate("/dashboard")}
@@ -40,7 +40,7 @@ const SocialConnect = ({ darkMode }) => {
         </button>
       </div>
 
-      {/* Welcome Heading */}
+      
       <h1 className="text-4xl md:text-5xl font-bold mb-2 text-center leading-tight">
         Hey {userName && `, ${userName}`}
       </h1>
@@ -49,9 +49,9 @@ const SocialConnect = ({ darkMode }) => {
         Are You ready to Generate the Best Personalised Resume?
       </h2>
 
-      {/* Buttons Section */}
+      
       <div className="space-y-6 w-full max-w-md">
-        {/* GitHub Button */}
+        
         <button
           onClick={() => navigate("/socials/github")}
           className={`${btnBg} w-full py-4 rounded-2xl ${btnText} font-semibold flex items-center justify-center gap-3 transition duration-300 ease-in-out ${btnShadow} transform ${btnHover}`}
@@ -63,7 +63,7 @@ const SocialConnect = ({ darkMode }) => {
           Connect your GitHub profile with for Github Scrapping
         </p>
 
-        {/* LinkedIn Button */}
+        
         <button
           onClick={() => navigate("/socials/linkedin")}
           className={`${btnBg} w-full py-4 rounded-2xl ${btnText} font-semibold flex items-center justify-center gap-3 transition duration-300 ease-in-out ${btnShadow} transform ${btnHover}`}
