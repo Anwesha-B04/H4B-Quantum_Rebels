@@ -7,6 +7,7 @@ import httpx
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+load_dotenv()
 
 from .schemas import FullGenerateRequest, SectionGenerateRequest, GenerateResponse, HealthResponse
 from .utils import retrieve_full_context, retrieve_section_context, format_context_for_prompt

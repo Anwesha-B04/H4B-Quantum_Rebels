@@ -1,8 +1,27 @@
+# orchestrator/requirements.txt
+
+# Core web framework
 fastapi
 uvicorn[standard]
+
+# Asynchronous HTTP client for calling other services
 httpx
+
+# Data validation (used by FastAPI)
 pydantic
+
+# For loading .env files
+python-dotenv
+
+# Core LangChain libraries for agent creation and execution
 langchain
+langchain-core
+
+# Specific LangChain integration for Google's Gemini models
 langchain-google-genai
-langchain_community
+
+# For connecting to Redis for session memory
 redis
+
+# For LangChain's Redis-backed chat history
+langchain-community

@@ -166,89 +166,19 @@ const createProfile = async (req, res) => {
 };
 
 
-const getAllProfiles = async (req, res) => {
+const getProfileData=async(req,res)=>{
+  const {userId}=req.body
   try {
-    const { 
-      page = 1, 
-      limit = 10, 
-      source, 
-      search,
-      sortBy = 'createdAt',
-      sortOrder = 'desc'
-    } = req.query;
-
-    // Build filter object
-    const filter = {};
-    if (source) filter.source = source;
-    if (search) {
-      filter.$or = [
-        { FullName: { $regex: search, $options: 'i' } },
-        { headline: { $regex: search, $options: 'i' } },
-        { Summary: { $regex: search, $options: 'i' } }
-      ];
-    }
-
-    // Build sort object
-    const sort = {};
-    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
-
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    
-    const [profilesList, totalCount] = await Promise.all([
-      profiles.find(filter)
-        .sort(sort)
-        .skip(skip)
-        .limit(parseInt(limit))
-        .lean(),
-      profiles.countDocuments(filter)
-    ]);
-
-    const totalPages = Math.ceil(totalCount / parseInt(limit));
-
-    return res.status(200).json({
-      success: true,
-      data: {
-        profiles: profilesList.map(profile => ({
-          id: profile._id,
-          personalInfo: {
-            name: profile.FullName,
-            title: profile.headline,
-            email: '',
-            phone: '',
-            location: '',
-            linkedin: '',
-            portfolio: ''
-          },
-          summary: profile.Summary,
-          experience: profile.Experience,
-          skills: profile.Skills,
-          certifications: profile.Certifications,
-          education: profile.Education,
-          languages: [],
-          source: profile.source,
-          scraped_at: profile.scraped_at,
-          createdAt: profile.createdAt,
-          updatedAt: profile.updatedAt
-        })),
-        pagination: {
-          currentPage: parseInt(page),
-          totalPages,
-          totalCount,
-          hasNextPage: parseInt(page) < totalPages,
-          hasPrevPage: parseInt(page) > 1
-        }
-      },
-      error: null
-    });
-
+    const profile=await profiles.findOne({userId});
+    res.json({
+      success:true,
+      message:"profile fetched",
+      profile:profile
+    })
   } catch (error) {
-    console.error('Error fetching profiles:', error);
-    return res.status(500).json({
-      success: false,
-      data: null,
-      error: 'Internal server error while fetching profiles'
-    });
+    console.error(error)
+    res.json(error)
   }
-};
+}
 
-export { githubScrapper, githubRepo, githubdata, createProfile};
+export { githubScrapper, githubRepo, githubdata, createProfile,getProfileData};

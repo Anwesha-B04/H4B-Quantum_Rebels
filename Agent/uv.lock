@@ -13,11 +13,13 @@ name = "agent"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "aiohttp" },
     { name = "fastapi" },
     { name = "httpx" },
     { name = "jinja2" },
     { name = "langchain" },
     { name = "langchain-community" },
+    { name = "langchain-core" },
     { name = "langchain-google-genai" },
     { name = "nltk" },
     { name = "numpy" },
@@ -35,11 +37,13 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aiohttp", specifier = ">=3.12.13" },
     { name = "fastapi", specifier = ">=0.115.13" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "langchain", specifier = ">=0.3.26" },
     { name = "langchain-community", specifier = ">=0.3.26" },
+    { name = "langchain-core", specifier = ">=0.3.66" },
     { name = "langchain-google-genai", specifier = ">=2.1.5" },
     { name = "nltk", specifier = ">=3.9.1" },
     { name = "numpy", specifier = ">=2.3.0" },

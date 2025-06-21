@@ -6,8 +6,7 @@ import Navbar from "@/components/landing/Navbar";
 import { getInitialDarkMode, setDarkModePreference } from "@/utils/theme";
 import { useEffect } from "react";
 import Footer from "@/components/dashboard/footer";
-
-
+import axios from "axios";
 
 export default function Resume_builder() {
   const [hasStarted, setHasStarted] = useState(false);
@@ -15,6 +14,7 @@ export default function Resume_builder() {
   const [darkMode, setDarkMode] = useState(getInitialDarkMode());
 
   const [userName, setUserName] = useState("");
+  const [jobDesc, setJobDesc] = useState("");
 
   useEffect(() => {
     const storedUser = localStorage.getItem("cvisionary:user");
@@ -24,8 +24,37 @@ export default function Resume_builder() {
     }
   }, []);
 
-  const handleStart = () => {
+  const fetchdata = async () => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_DEV_URL}Scrapper/linkedin/profile`,
+        { userId: decoded.userId }
+      );
+      console.log(response);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  useEffect(() => {
+    fetchdata();
+  }, []);
+
+  const handleStart = async () => {
     setHasStarted(true);
+
+    try {
+      const response = await axios(`${import.meta.env.VITE_AGENT_URL}v1/chat`, {
+        session_id: "my-test-session-123",
+        user_message:
+          "Hi, please create a full resume for me based on my profile and this job description.",
+        user_id: decoded.userId,
+        job_description: jobDesc,
+      });
+
+      console.log(response)
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const handleSetDarkMode = (value) => {
@@ -60,11 +89,22 @@ export default function Resume_builder() {
           >
             <div className="flex flex-col items-center justify-center w-full h-full flex-1">
               <h1 className="text-4xl md:text-5xl font-bold mb-2 text-center leading-tight">
-                Welcome  {userName && `, ${userName}`}
+                Welcome {userName && `, ${userName}`}
               </h1>
-              <p className={`text-xl md:text-2xl text-center mb-10 max-w-2xl ${subTextClass}`}>
-                Craft a standout resume that showcases your skills and helps you land your dream job.
+              <p
+                className={`text-xl md:text-2xl text-center mb-10 max-w-2xl ${subTextClass}`}
+              >
+                Craft a standout resume that showcases your skills and helps you
+                land your dream job.
               </p>
+              <textarea
+                placeholder="Job Description"
+                value={jobDesc}
+                onChange={(e) => setJobDesc(e.target.value)}
+                rows={4}
+                cols={40}
+                className={`p-3 rounded-lg  focus:outline-none md:col-span-2 bg-blue-950`}
+              />
               <button
                 className="mt-2 px-10 py-4 bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-semibold rounded-full text-xl shadow-lg transition-colors duration-300"
                 onClick={handleStart}
@@ -81,7 +121,11 @@ export default function Resume_builder() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className={`w-1/2 border-r ${darkMode ? "border-[#23243a]" : "border-[#e5e7eb]"} overflow-y-auto`}>
+            <div
+              className={`w-1/2 border-r ${
+                darkMode ? "border-[#23243a]" : "border-[#e5e7eb]"
+              } overflow-y-auto`}
+            >
               <ChatWindow darkMode={darkMode} setLivePreview={setLivePreview} />
             </div>
             <div className="w-1/2 overflow-y-auto">
@@ -94,7 +138,6 @@ export default function Resume_builder() {
           </motion.div>
         )}
       </AnimatePresence>
-      
     </div>
   );
 }

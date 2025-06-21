@@ -1,130 +1,122 @@
+# orchestrator/tools.py
+
 import json
 import os
 from typing import Optional, List
 import httpx
 from langchain.tools import tool
-from fastapi import HTTPException, status
+from pydantic import ValidationError
 
 from .memory import get_session_context, update_session_context
-from .schemas import RetrieveResponse, GenerateResponse, ScoreResponse, SuggestionResponse
+# --- FIX: Import ChunkItem and ScoreResponse directly for type hinting ---
+from .schemas import RetrieveResponse, GenerateResponse, ScoreResponse, SuggestionResponse, ChunkItem
 
-SCORING_SERVICE_URL = os.getenv("SCORING_SERVICE_URL")
-RETRIEVAL_SERVICE_URL = os.getenv("RETRIEVAL_SERVICE_URL")
-GENERATION_SERVICE_URL = os.getenv("GENERATION_SERVICE_URL")
+SCORING_SERVICE_URL = os.getenv("SCORING_SERVICE_URL", "http://localhost:8004")
+RETRIEVAL_SERVICE_URL = os.getenv("RETRIEVAL_SERVICE_URL", "http://localhost:8002")
+GENERATION_SERVICE_URL = os.getenv("GENERATION_SERVICE_URL", "http://localhost:8000")
 
-def _format_context_for_prompt(chunks: List[RetrieveResponse.results]) -> str:
-    if not chunks: return "No relevant context was found from the user's profile."
-    formatted_strings = [f"- {c.text.strip()} (Source: {c.source_type}, Score: {c.score:.2f})" for c in chunks]
+# --- FIX: Corrected the type hint to use the explicit ChunkItem model ---
+def format_context_for_prompt(chunks: List[ChunkItem]) -> str:
+    """Formats retrieved chunks into a human-readable context string."""
+    if not chunks:
+        return "No relevant context was found from the user's profile."
+    formatted_strings = [f"- From {c.index_namespace} ({c.source_type}): {c.text.strip()}" for c in chunks]
     return "\n".join(formatted_strings)
 
 class ToolBox:
     """A container for agent tools that shares the HTTP client and session_id."""
     def __init__(self, client: httpx.AsyncClient, session_id: str):
-        if not all([SCORING_SERVICE_URL, RETRIEVAL_SERVICE_URL, GENERATION_SERVICE_URL]):
-            raise ValueError("One or more service URLs are not configured in environment variables.")
         self.http_client = client
         self.session_id = session_id
+        
+        self.create_and_score_full_resume_tool = tool(self._create_and_score_full_resume)
+        self.get_improvement_suggestions_tool = tool(self._get_improvement_suggestions_tool)
+        self.score_resume_text_tool = tool(self._score_resume_text_tool)
 
-    def get_tools(self) -> list:
-        """Returns a list of all tool methods for the agent."""
-        return [
-            self.retrieve_context_tool,
-            self.generate_text_tool,
-            self.get_current_resume_section_tool,
-            self.get_full_resume_text_tool,
-            self.update_resume_in_memory_tool,
-            self.score_resume_text_tool,
-            self.get_improvement_suggestions_tool,
-        ]
+    async def _create_and_score_full_resume(self) -> str:
+        """
+        Use this tool as the very first step when a user asks to create a new resume from scratch.
+        This single tool handles the entire process: retrieving context, generating the full resume,
+        saving it, scoring it, and returning a summary of the result.
+        """
+        context_data = get_session_context(self.session_id)
+        if not context_data: return "Error: Session not found. Cannot create resume."
 
-    async def _call_service(self, method: str, url: str, **kwargs):
         try:
-            response = await self.http_client.request(method, url, **kwargs)
-            response.raise_for_status()
-            return response.json()
-        except httpx.HTTPStatusError as e:
-            detail = e.response.json().get("detail", e.response.text)
-            raise HTTPException(status_code=e.response.status_code, detail=f"Error from downstream service at {url}: {detail}")
-        except httpx.RequestError as e:
-            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Could not connect to service at {url}: {e}")
+            gen_endpoint = f"{GENERATION_SERVICE_URL.rstrip('/')}/generate/full"
+            gen_payload = {"user_id": context_data["user_id"], "job_description": context_data["job_description"]}
+            gen_response = await self.http_client.post(gen_endpoint, json=gen_payload, timeout=90.0)
+            gen_response.raise_for_status()
+            generated_json_text = GenerateResponse(**gen_response.json()).generated_text
+            generated_content = json.loads(generated_json_text)
+        except Exception as e:
+            return f"Error: Failed during resume generation step. Details: {e}"
 
-    @tool
-    async def retrieve_context_tool(self, section_id: Optional[str] = None) -> str:
-        """Use this tool to get relevant context from the user's profile. If rewriting a section, provide `section_id`. For a full resume, omit `section_id`."""
-        context = get_session_context(self.session_id)
-        if not context: raise ValueError("Session not found.")
+        context_data["resume_state"].update(generated_content)
+        update_session_context(self.session_id, context_data)
         
-        endpoint = f"{RETRIEVAL_SERVICE_URL}/retrieve/{'section' if section_id else 'full'}"
-        payload = {"user_id": context["user_id"], "job_description": context["job_description"]}
-        if section_id: payload["section_id"] = section_id
-        
-        response_data = await self._call_service("POST", endpoint, json=payload)
-        return _format_context_for_prompt(RetrieveResponse(**response_data).results)
+        full_resume_text = self._get_full_resume_text_from_state(context_data["resume_state"])
+        if "Error" in full_resume_text:
+            return "Error: Could not format the newly generated resume for scoring."
 
-    @tool
-    async def generate_text_tool(self, section_id: Optional[str] = None, existing_text: Optional[str] = None, context: Optional[str] = None) -> str:
-        """Use this to generate new resume text. For a section, provide `section_id`, `existing_text`, and `context`. For a full resume, provide only `context`. Returns a JSON string."""
-        session_context = get_session_context(self.session_id)
-        if not session_context: raise ValueError("Session not found.")
-        
-        endpoint = f"{GENERATION_SERVICE_URL}/generate/{'section' if section_id else 'full'}"
-        payload = {"user_id": session_context["user_id"], "job_description": session_context["job_description"]}
-        if section_id: payload.update({"section_id": section_id, "existing_text": existing_text})
-        
-        response_data = await self._call_service("POST", endpoint, json=payload)
-        return GenerateResponse(**response_data).generated_text
-
-    @tool
-    def get_current_resume_section_tool(self, section_id: str) -> str:
-        """Use this to get the current text of a single resume section before rewriting it."""
-        context = get_session_context(self.session_id)
-        if not context: raise ValueError("Session not found.")
-        section_content = context.get("resume_state", {}).get(section_id)
-        return json.dumps({section_id: section_content}) if section_content else f"Section '{section_id}' is currently empty."
-    
-    @tool
-    def get_full_resume_text_tool(self) -> str:
-        """Use this to get the entire current resume as a single formatted string, which is required for scoring."""
-        context = get_session_context(self.session_id)
-        if not context or not context.get("resume_state"): raise ValueError("Resume is currently empty.")
-        
-        parts = [f"### {sec.upper()}\n{json.dumps(val, indent=2)}" for sec, val in context["resume_state"].items()]
-        return "\n\n".join(parts)
-
-    @tool
-    def update_resume_in_memory_tool(self, new_content_json: str) -> str:
-        """Use this to save generated content. The `new_content_json` must be the JSON string from `generate_text_tool`."""
-        context = get_session_context(self.session_id)
-        if not context: raise ValueError("Session not found.")
         try:
-            new_content = json.loads(new_content_json)
-            context["resume_state"].update(new_content)
-            update_session_context(self.session_id, context)
-            return f"Success: Resume updated with sections: {', '.join(new_content.keys())}."
-        except json.JSONDecodeError:
-            raise ValueError("Invalid JSON provided in `new_content_json`.")
+            score_endpoint = f"{SCORING_SERVICE_URL.rstrip('/')}/score"
+            score_payload = {"job_description": context_data["job_description"], "resume_text": full_resume_text}
+            score_response = await self.http_client.post(score_endpoint, json=score_payload, timeout=45.0)
+            score_response.raise_for_status()
+            score_data = ScoreResponse(**score_response.json())
+        except Exception as e:
+            return f"Error: Generated the resume but failed during the scoring step. Details: {e}"
 
-    @tool
-    async def score_resume_text_tool(self, resume_text: str) -> str:
-        """Use this tool AFTER generating and updating a draft to evaluate how well it matches the job description."""
+        return (
+            f"Successfully generated and scored the new resume. "
+            f"Final Score: {score_data.final_score:.2f}. "
+            f"Missing Keywords: {score_data.missing_keywords or 'None'}. "
+            f"The resume has been saved to your session."
+        )
+
+    async def _score_resume_text_tool(self, resume_text: str) -> str:
+        """Use this tool to explicitly re-score a resume's text if the user provides new text or asks for a re-evaluation."""
         context = get_session_context(self.session_id)
-        if not context: raise ValueError("Session not found.")
-        
-        endpoint = f"{SCORING_SERVICE_URL}/score"
+        if not context: return "Error: Session not found."
+        endpoint = f"{SCORING_SERVICE_URL.rstrip('/')}/score"
         payload = {"job_description": context["job_description"], "resume_text": resume_text}
-        
-        response_data = await self._call_service("POST", endpoint, json=payload)
-        score_data = ScoreResponse(**response_data)
-        return f"Scoring Result: Final Score = {score_data.final_score:.2f}, Missing Keywords = {score_data.missing_keywords}"
+        try:
+            response = await self.http_client.post(endpoint, json=payload)
+            response.raise_for_status()
+            score_data = ScoreResponse(**response.json())
+            return f"Scoring Result: Final Score = {score_data.final_score:.2f}, Missing Keywords = {score_data.missing_keywords}"
+        except Exception as e: return f"Error scoring text: {e}"
 
-    @tool
-    async def get_improvement_suggestions_tool(self, missing_keywords: List[str]) -> str:
-        """Use this tool if a score is low to get actionable suggestions for improvement."""
-        if not missing_keywords: return "No missing keywords to get suggestions for."
-        
-        endpoint = f"{SCORING_SERVICE_URL}/suggest"
+    async def _get_improvement_suggestions_tool(self, missing_keywords: List[str]) -> str:
+        """Use this tool to get actionable suggestions for improvement based on a list of missing keywords, usually after a resume has been scored."""
+        if not missing_keywords: return "No missing keywords provided, so no suggestions can be generated."
+        endpoint = f"{SCORING_SERVICE_URL.rstrip('/')}/suggest"
         payload = {"missing_keywords": missing_keywords}
+        try:
+            response = await self.http_client.post(endpoint, json=payload)
+            response.raise_for_status()
+            suggestions = SuggestionResponse(**response.json()).suggestions
+            if not suggestions: return "No specific suggestions were generated."
+            return "Here are some suggestions for improvement:\n- " + "\n- ".join(suggestions)
+        except Exception as e: return f"Error getting suggestions: {e}"
+
+    def _get_full_resume_text_from_state(self, resume_state: dict) -> str:
+        """Helper to format the resume state into a single string."""
+        if not resume_state:
+            return "Error: Resume is currently empty."
         
-        response_data = await self._call_service("POST", endpoint, json=payload)
-        suggestions = SuggestionResponse(**response_data).suggestions
-        return "Here are some suggestions for improvement:\n- " + "\n- ".join(suggestions)
+        text_parts = []
+        for section, content in resume_state.items():
+            text_parts.append(f"--- {section.upper()} ---")
+            if isinstance(content, list):
+                for item in content:
+                    if isinstance(item, dict): text_parts.append(json.dumps(item))
+                    else: text_parts.append(str(item))
+            elif isinstance(content, dict):
+                 text_parts.append(json.dumps(content))
+            else:
+                text_parts.append(str(content))
+            text_parts.append("")
+        
+        return "\n".join(text_parts).strip()
