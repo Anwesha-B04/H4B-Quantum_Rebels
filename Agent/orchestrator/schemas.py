@@ -7,59 +7,20 @@ from datetime import datetime
 # --- Public API Schemas ---
 
 class ChatRequest(BaseModel):
-    """
-    Request model for the main /v1/chat endpoint.
-    This is the primary input to the Orchestrator Agent.
-    """
-    session_id: str = Field(
-        ...,
-        description="A unique identifier for the user's session. This ID is used to maintain conversation history and state.",
-        min_length=1,
-        json_schema_extra={"example": "session_abc123"}
-    )
-    user_message: str = Field(
-        ...,
-        description="The user's message or instruction to the agent (e.g., 'Create a resume for this job', 'Rewrite my experience section').",
-        min_length=1,
-        json_schema_extra={"example": "Please generate a summary for my resume."}
-    )
-    
-    user_id: Optional[str] = Field(
-        None,
-        description="The user's unique ID. This is required only for the first message in a new session.",
-        json_schema_extra={"example": "user_xyz789"}
-    )
-    job_description: Optional[str] = Field(
-        None,
-        description="The full job description text. This is required only for the first message in a new session.",
-        json_schema_extra={"example": "We are looking for an experienced Python developer..."}
-    )
+    session_id: str = Field(..., min_length=1)
+    user_message: str = Field(..., min_length=1)
+    user_id: Optional[str] = None
+    job_description: Optional[str] = None
 
 class ChatResponse(BaseModel):
-    """
-    Response model for the /v1/chat endpoint.
-    This is the primary output from the Orchestrator Agent after it has completed a turn.
-    """
-    agent_response: str = Field(
-        ...,
-        description="The natural language response from the agent to the user."
-    )
-    session_id: str = Field(
-        ...,
-        description="The session identifier, returned for client-side state management."
-    )
-    resume_state: Optional[Dict[str, Any]] = Field(
-        None,
-        description="The current, complete state of the resume being built, returned after each turn."
-    )
+    agent_response: str
+    session_id: str
+    resume_state: Optional[Dict[str, Any]] = None
 
 class HealthResponse(BaseModel):
-    """
-    Response model for the /health endpoint.
-    """
-    status: str = Field(..., description="Overall health status of the service.")
-    service: str = Field(..., description="The name of the service.")
-    redis_connected: bool = Field(..., description="Indicates if the connection to the Redis memory store is successful.")
+    status: str
+    service: str
+    redis_connected: bool
 
 
 # --- Internal Schemas (for validating responses from other services) ---
@@ -89,15 +50,14 @@ class GenerateResponse(BaseModel):
     Internal model to validate the full response from the Generation Service.
     """
     generated_text: str
-    # These fields might exist in the generator's response, so we define them.
     raw_prompt: Optional[str] = None
     retrieval_mode: Optional[str] = None
     section_id: Optional[str] = None
 
 class ScoreResponse(BaseModel):
     """
-    # UPDATE: This schema is now aligned with the new scoring-service response.
-    # It uses final_score, semantic_score, and keyword_score.
+    Internal model to validate the response from the Scoring Service's /score endpoint.
+    This now correctly matches the scoring service's output.
     """
     final_score: float
     semantic_score: float
