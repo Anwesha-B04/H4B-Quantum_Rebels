@@ -22,6 +22,8 @@ const Register = () => {
 
   const { user, signIn, isAuthenticated, isLoading } = useUser();
 
+  const [Error, setError] = useState("")
+
   const handleGoogleSignUp = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
@@ -81,7 +83,8 @@ const Register = () => {
       }
     } catch (error) {
       console.error("Registration error:", error);
-      alert("Registration failed. Please try again.");
+      setError(error.message)
+
     }
   };
 
@@ -158,6 +161,7 @@ const Register = () => {
             >
               Sign Up
             </button>
+            <h3 className="text-red-700">{Error}</h3>
           </form>
 
           <div className="my-6 flex items-center gap-2 text-gray-500 text-sm">

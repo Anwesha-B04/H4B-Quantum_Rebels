@@ -10,9 +10,13 @@ const JobApply = ({ darkMode }) => {
   const [userName, setUserName] = useState("");
 
   useEffect(() => {
-    const storedName = localStorage.getItem("userName");
-    if (storedName) setUserName(storedName);
+    const storedUser = localStorage.getItem("cvisionary:user");
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      setUserName(parsedUser.name || "");
+    }
   }, []);
+
 
   // Form states
   const [jobTitle, setJobTitle] = useState("");
@@ -159,11 +163,10 @@ const JobApply = ({ darkMode }) => {
               <button
                 onClick={() => navigate("/resume-builder")}
                 disabled={!isFormValid()}
-                className={`${
-                  isFormValid()
+                className={`${isFormValid()
                     ? `${btnBg} cursor-pointer`
                     : "bg-blue-800 opacity-50 cursor-not-allowed"
-                } text-white font-semibold py-3 px-8 rounded-xl ${btnShadow} transition`}
+                  } text-white font-semibold py-3 px-8 rounded-xl ${btnShadow} transition`}
               >
                 Generate Resume Now
               </button>
