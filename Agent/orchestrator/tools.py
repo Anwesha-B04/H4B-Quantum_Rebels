@@ -1,4 +1,3 @@
-
 import json
 import os
 from typing import Optional, List
@@ -13,25 +12,30 @@ SCORING_SERVICE_URL = os.getenv("SCORING_SERVICE_URL")
 RETRIEVAL_SERVICE_URL = os.getenv("RETRIEVAL_SERVICE_URL")
 GENERATION_SERVICE_URL = os.getenv("GENERATION_SERVICE_URL")
 
-def _format_context_for_prompt(chunks: List) -> str:
+def _format_context_for_prompt(chunks: List[RetrieveResponse.results]) -> str:
     if not chunks: return "No relevant context was found from the user's profile."
     formatted_strings = [f"- {c.text.strip()} (Source: {c.source_type}, Score: {c.score:.2f})" for c in chunks]
     return "\n".join(formatted_strings)
 
 class ToolBox:
+    """A container for agent tools that shares the HTTP client and session_id."""
     def __init__(self, client: httpx.AsyncClient, session_id: str):
         if not all([SCORING_SERVICE_URL, RETRIEVAL_SERVICE_URL, GENERATION_SERVICE_URL]):
             raise ValueError("One or more service URLs are not configured in environment variables.")
         self.http_client = client
         self.session_id = session_id
-        
-        self.retrieve_context_tool = tool(self._retrieve_context_tool)
-        self.generate_text_tool = tool(self._generate_text_tool)
-        self.get_current_resume_section_tool = tool(self._get_current_resume_section_tool)
-        self.update_resume_in_memory_tool = tool(self._update_resume_in_memory_tool)
-        self.score_resume_text_tool = tool(self._score_resume_text_tool)
-        self.get_improvement_suggestions_tool = tool(self._get_improvement_suggestions_tool)
-        self.get_full_resume_text_tool = tool(self._get_full_resume_text_tool)
+
+    def get_tools(self) -> list:
+        """Returns a list of all tool methods for the agent."""
+        return [
+            self.retrieve_context_tool,
+            self.generate_text_tool,
+            self.get_current_resume_section_tool,
+            self.get_full_resume_text_tool,
+            self.update_resume_in_memory_tool,
+            self.score_resume_text_tool,
+            self.get_improvement_suggestions_tool,
+        ]
 
     async def _call_service(self, method: str, url: str, **kwargs):
         try:
@@ -44,7 +48,9 @@ class ToolBox:
         except httpx.RequestError as e:
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Could not connect to service at {url}: {e}")
 
-    async def _retrieve_context_tool(self, section_id: Optional[str] = None) -> str:
+    @tool
+    async def retrieve_context_tool(self, section_id: Optional[str] = None) -> str:
+        """Use this tool to get relevant context from the user's profile. If rewriting a section, provide `section_id`. For a full resume, omit `section_id`."""
         context = get_session_context(self.session_id)
         if not context: raise ValueError("Session not found.")
         
@@ -55,7 +61,9 @@ class ToolBox:
         response_data = await self._call_service("POST", endpoint, json=payload)
         return _format_context_for_prompt(RetrieveResponse(**response_data).results)
 
-    async def _generate_text_tool(self, section_id: Optional[str] = None, existing_text: Optional[str] = None, context: Optional[str] = None) -> str:
+    @tool
+    async def generate_text_tool(self, section_id: Optional[str] = None, existing_text: Optional[str] = None, context: Optional[str] = None) -> str:
+        """Use this to generate new resume text. For a section, provide `section_id`, `existing_text`, and `context`. For a full resume, provide only `context`. Returns a JSON string."""
         session_context = get_session_context(self.session_id)
         if not session_context: raise ValueError("Session not found.")
         
@@ -66,20 +74,26 @@ class ToolBox:
         response_data = await self._call_service("POST", endpoint, json=payload)
         return GenerateResponse(**response_data).generated_text
 
-    def _get_current_resume_section_tool(self, section_id: str) -> str:
+    @tool
+    def get_current_resume_section_tool(self, section_id: str) -> str:
+        """Use this to get the current text of a single resume section before rewriting it."""
         context = get_session_context(self.session_id)
         if not context: raise ValueError("Session not found.")
         section_content = context.get("resume_state", {}).get(section_id)
         return json.dumps({section_id: section_content}) if section_content else f"Section '{section_id}' is currently empty."
     
-    def _get_full_resume_text_tool(self) -> str:
+    @tool
+    def get_full_resume_text_tool(self) -> str:
+        """Use this to get the entire current resume as a single formatted string, which is required for scoring."""
         context = get_session_context(self.session_id)
         if not context or not context.get("resume_state"): raise ValueError("Resume is currently empty.")
         
         parts = [f"### {sec.upper()}\n{json.dumps(val, indent=2)}" for sec, val in context["resume_state"].items()]
         return "\n\n".join(parts)
 
-    def _update_resume_in_memory_tool(self, new_content_json: str) -> str:
+    @tool
+    def update_resume_in_memory_tool(self, new_content_json: str) -> str:
+        """Use this to save generated content. The `new_content_json` must be the JSON string from `generate_text_tool`."""
         context = get_session_context(self.session_id)
         if not context: raise ValueError("Session not found.")
         try:
@@ -90,7 +104,9 @@ class ToolBox:
         except json.JSONDecodeError:
             raise ValueError("Invalid JSON provided in `new_content_json`.")
 
-    async def _score_resume_text_tool(self, resume_text: str) -> str:
+    @tool
+    async def score_resume_text_tool(self, resume_text: str) -> str:
+        """Use this tool AFTER generating and updating a draft to evaluate how well it matches the job description."""
         context = get_session_context(self.session_id)
         if not context: raise ValueError("Session not found.")
         
@@ -101,7 +117,9 @@ class ToolBox:
         score_data = ScoreResponse(**response_data)
         return f"Scoring Result: Final Score = {score_data.final_score:.2f}, Missing Keywords = {score_data.missing_keywords}"
 
-    async def _get_improvement_suggestions_tool(self, missing_keywords: List[str]) -> str:
+    @tool
+    async def get_improvement_suggestions_tool(self, missing_keywords: List[str]) -> str:
+        """Use this tool if a score is low to get actionable suggestions for improvement."""
         if not missing_keywords: return "No missing keywords to get suggestions for."
         
         endpoint = f"{SCORING_SERVICE_URL}/suggest"

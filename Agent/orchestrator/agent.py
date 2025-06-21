@@ -1,4 +1,3 @@
-# --- PASTE INTO orchestrator/agent.py ---
 import os
 from langchain.agents import AgentExecutor
 from langchain.agents.format_scratchpad.openai_tools import format_to_openai_tool_messages
@@ -37,15 +36,7 @@ def create_agent_executor(toolbox: ToolBox, session_id: str) -> AgentExecutor:
     
     llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=gemini_api_key, temperature=0.0)
     
-    tools = [
-        toolbox.retrieve_context_tool,
-        toolbox.generate_text_tool,
-        toolbox.get_current_resume_section_tool,
-        toolbox.get_full_resume_text_tool,
-        toolbox.update_resume_in_memory_tool,
-        toolbox.score_resume_text_tool,
-        toolbox.get_improvement_suggestions_tool,
-    ]
+    tools = toolbox.get_tools()
     
     llm_with_tools = llm.bind_tools(tools)
     
