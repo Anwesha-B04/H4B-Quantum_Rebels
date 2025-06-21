@@ -78,7 +78,7 @@ const loginController = async (req, res) => {
       const checkuser = await User.findOne({ userEmail: useremail });
 
 
-      if (!user || user.role !== role) {
+      if (!checkuser || checkuser.role !== role) {
         return res.status(401).json({ success: false, message: "Invalid credentials or role" });
       }
 
