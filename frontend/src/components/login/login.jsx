@@ -8,6 +8,7 @@ import { getAuth, signOut as firebaseSignOut } from "firebase/auth";
 import { v4 as uuidv4 } from 'uuid';
 
 
+
 const Login = () => {
   const [useremail, setemail] = useState("");
   const [userpassword, setpassword] = useState("");
@@ -19,6 +20,7 @@ const Login = () => {
   const { user, signIn, isAuthenticated, isLoading } = useUser();
 
   const handleGoogleLogin = async () => {
+
     try {
       const result = await signInWithPopup(auth, googleProvider);
 
@@ -60,6 +62,7 @@ const Login = () => {
       console.error("Google login error:", err.message);
     }
   };
+
 
   const handleGithubLogin = async () => {
     try {
