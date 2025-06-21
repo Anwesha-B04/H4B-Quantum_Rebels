@@ -10,10 +10,9 @@ from pydantic import ValidationError
 from .memory import get_session_context, update_session_context
 from .schemas import RetrieveResponse, GenerateResponse, ScoreResponse, SuggestionResponse, ChunkItem
 
-# --- FIX: Updated default URLs to match the correct service ports ---
 SCORING_SERVICE_URL = os.getenv("SCORING_SERVICE_URL", "http://localhost:8004")
 RETRIEVAL_SERVICE_URL = os.getenv("RETRIEVAL_SERVICE_URL", "http://localhost:8002")
-GENERATION_SERVICE_URL = os.getenv("GENERATION_SERVICE_URL", "http://localhost:8003") # Corrected from 8000
+GENERATION_SERVICE_URL = os.getenv("GENERATION_SERVICE_URL", "http://localhost:8003")
 
 def format_context_for_prompt(chunks: List[ChunkItem]) -> str:
     """Formats retrieved chunks into a human-readable context string."""
@@ -35,13 +34,13 @@ class ToolBox:
     async def _create_and_score_full_resume(self) -> str:
         """
         Use this tool as the very first step when a user asks to create a new resume from scratch.
-        This single tool handles the entire process: retrieving context, generating the full resume,
-        saving it, scoring it, and returning a summary of the result.
+        This single tool handles the entire process: generating the full resume by calling the generator service,
+        saving the result to memory, scoring it, and returning a summary of the result.
         """
-        # --- FIX: The tool now correctly gets its context from Redis ---
         context_data = get_session_context(self.session_id)
         if not context_data: return "Error: Session not found. Cannot create resume."
 
+        # Step 1: Generate the full resume. The generator calls retrieval, which now autonomously handles indexing.
         try:
             gen_endpoint = f"{GENERATION_SERVICE_URL.rstrip('/')}/generate/full"
             gen_payload = {"user_id": context_data["user_id"], "job_description": context_data["job_description"]}
@@ -52,13 +51,16 @@ class ToolBox:
         except Exception as e:
             return f"Error: Failed during resume generation step. Details: {e}"
 
+        # Step 2: Update the resume in memory
         context_data["resume_state"].update(generated_content)
         update_session_context(self.session_id, context_data)
         
+        # Step 3: Format the full resume text for scoring
         full_resume_text = self._get_full_resume_text_from_state(context_data["resume_state"])
         if "Error" in full_resume_text:
             return "Error: Could not format the newly generated resume for scoring."
 
+        # Step 4: Score the new resume
         try:
             score_endpoint = f"{SCORING_SERVICE_URL.rstrip('/')}/score"
             score_payload = {"job_description": context_data["job_description"], "resume_text": full_resume_text}
@@ -68,6 +70,7 @@ class ToolBox:
         except Exception as e:
             return f"Error: Generated the resume but failed during the scoring step. Details: {e}"
 
+        # Step 5: Format and return the final summary
         return (
             f"Successfully generated and scored the new resume. "
             f"Final Score: {score_data.final_score:.2f}. "
@@ -75,7 +78,6 @@ class ToolBox:
             f"The resume has been saved to your session."
         )
 
-    # ... (rest of the tools file remains the same) ...
     async def _score_resume_text_tool(self, resume_text: str) -> str:
         """Use this tool to explicitly re-score a resume's text if the user provides new text or asks for a re-evaluation."""
         context = get_session_context(self.session_id)
