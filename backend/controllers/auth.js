@@ -2,11 +2,13 @@ import User from '../models/auth_user.js';
 import bycrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+
 dotenv.config()
 
 
 const registerUser = async (req, res) => {
   const { username, useremail, userpassword, role } = req.body;
+  console.log(username, useremail, userpassword, role)
   try {
     try {
 
@@ -36,6 +38,7 @@ const registerUser = async (req, res) => {
       })
 
       const accessToken = jwt.sign({
+        userId:newUser._id,
         username : username,
         
         useremail : useremail
@@ -97,6 +100,7 @@ const loginController = async (req, res) => {
       }
 
       const accessToken = jwt.sign({
+        userId:checkuser._id,
         username: checkuser.userName,
         userId: checkuser._id,
         useremail: checkuser.userEmail
@@ -131,7 +135,20 @@ const loginController = async (req, res) => {
   }
 }
 
+const findUser=async(req,res)=>{
+  const {userEmail}=req.body
+  console.log(userEmail)
+  try {
+    const checkuser = await User.findOne({ userEmail: userEmail });
+    console.log(checkuser)
+    res.json(checkuser)
+  } catch (error) {
+    console.error(error)
+    res.json("Some Error Occured")
+  }
+}
 
 
 
-export { registerUser, loginController };
+
+export { registerUser, loginController ,findUser};
