@@ -1,0 +1,25 @@
+import json
+import os
+from typing import Dict, Any, Optional
+import redis
+from langchain_community.chat_message_histories import RedisChatMessageHistory
+
+redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+redis_client = redis.from_url(redis_url, decode_responses=True)
+
+def get_session_history(session_id: str) -> RedisChatMessageHistory:
+    return RedisChatMessageHistory(session_id=f"chat_history:{session_id}", url=redis_url)
+
+def get_session_context(session_id: str) -> Optional[Dict[str, Any]]:
+    key = f"session_context:{session_id}"
+    data = redis_client.get(key)
+    return json.loads(data) if data else None
+
+def update_session_context(session_id: str, context_data: Dict[str, Any]) -> None:
+    key = f"session_context:{session_id}"
+    redis_client.set(key, json.dumps(context_data))
+
+def initialize_session_context(session_id: str, user_id: str, job_description: str) -> Dict[str, Any]:
+    context = {"user_id": user_id, "job_description": job_description, "resume_state": {}}
+    update_session_context(session_id, context)
+    return context
