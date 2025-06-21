@@ -12,7 +12,7 @@ import Socials from "./pages/socials"
 import Social_Github from "./pages/socials-github.jsx"
 import Social_Linkedin from "./pages/socials-linkedln.jsx"
 import Jobs from "./pages/job.jsx"
-
+import Comapany_Dashboard from "./pages/company-dashboard"
 
 
 function App() {
@@ -31,6 +31,7 @@ function App() {
       <Route path="/socials/github" element={<Social_Github />} />
       <Route path="/socials/linkedin" element={<Social_Linkedin />} />
       <Route path="/jobs" element={<Jobs />} />
+      <Route path="/company-dashboard" element={<Comapany_Dashboard />} />
       
 
     </Routes>
