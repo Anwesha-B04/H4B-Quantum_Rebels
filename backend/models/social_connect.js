@@ -2,49 +2,54 @@ import mongoose  from "mongoose";
 
 
 const SocialsConnectSchema = new mongoose.Schema({
-
-
    userId: {
-    type : mongoose.Schema.Types.ObjectId,
-    ref : "Auth_User",
-    required : true 
+      type: String,
+      required: true
    },
-
-
-   socialProvider : {
-    type : String ,
-    enum : ["LinkedIn", "GitHub"],
-    required : true
+   githubScrapedData: {
+      userName: {
+         type: String
+      },
+      avatar: {
+         type: String
+      },
+      bio: {
+         type: String
+      },
+      followers: {
+         type: String
+      },
+      following: {
+         type: String
+      },
+      repos: {
+         type: String
+      }
    },
-
-   socialProviderId : {
-    type : String,
-   },
-
-
-   accessToken : {
-    type : String
-   },
-
-
-   refreshToken : {
-    type : String
-   },
-
-
-   scrappedData : {
-    type : Object,
-    default : {},
-   },
-
-
-   connectedAt :{
-    type : Date ,
-    default: Date.now()
+   LinkedinData: {
+      FullName: {
+         type: String
+      },
+      headline: {
+         type: String
+      },
+      Summary: {
+         type: String
+      },
+      Experience: {
+         type: Array
+      },
+      Education: {
+         type: Array
+      },
+      Skills: {
+         type: Array
+      },
+      Certifications: {
+         type: Array
+      }
    }
-  },
-   {timestamps: true} 
-);
+}, { timestamps: true });
 
 const SocialsConnect = mongoose.model("Socials_Connect", SocialsConnectSchema);
 

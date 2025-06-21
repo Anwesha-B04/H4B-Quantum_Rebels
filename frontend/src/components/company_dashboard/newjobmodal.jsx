@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 
-const NewJobModal = ({ isOpen, onClose, onSave, darkMode }) => { // <-- add darkMode prop
+const NewJobModal = ({ isOpen, onClose, onSave, darkMode }) => { 
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -16,7 +16,7 @@ const NewJobModal = ({ isOpen, onClose, onSave, darkMode }) => { // <-- add dark
     setFormData({...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async(e) => {
     onSave(formData);
     setFormData({
       title: '',
@@ -27,7 +27,17 @@ const NewJobModal = ({ isOpen, onClose, onSave, darkMode }) => { // <-- add dark
       jobType: '',
       stipend: ''
     });
-    onClose();
+    e.preventDefault()
+
+    try {
+      const response=await axios.post(`${import.meta.env.VITE_DEV_URL}jobs/create`,{title:formData.title , description:formData.description , 
+        company:formData.company , location:formData.location , category:formData.category , jobType:formData.jobType , stipend:formData.stipend
+      })
+      console.log(response)
+    } catch (error) {
+      
+    }
+    
   };
 
   if (!isOpen) return null;

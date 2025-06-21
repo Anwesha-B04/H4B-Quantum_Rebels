@@ -20,6 +20,7 @@
     "clsx": "^2.1.1",
     "firebase": "^11.9.1",
     "framer-motion": "^12.18.1",
+    "jwt-decode": "^4.0.0",
     "lucide-react": "^0.515.0",
     "path": "^0.12.7",
     "react": "^19.1.0",

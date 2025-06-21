@@ -1,10 +1,12 @@
 import { Router } from "express";
-import {  githubRepo, githubScrapper } from "../controllers/SocialConnectController.js";
+import {  githubdata, githubRepo, githubScrapper, linkedinData } from "../controllers/SocialConnectController.js";
 
 const ScrapperRouter=Router()
 
 ScrapperRouter.get("/github",githubScrapper)
 ScrapperRouter.get("/github/repos",githubRepo)
+ScrapperRouter.post("/github/data",githubdata)
+ScrapperRouter.post("/linkedin/data",linkedinData)
 
 
 
