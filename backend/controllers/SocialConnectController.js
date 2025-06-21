@@ -1,5 +1,6 @@
 import gs from "github-scraper";
 import SocialsConnect from "../models/social_connect.js";
+import { profiles } from "../models/profiles.models.js";
 
 const githubScrapper = async (req, res) => {
   const { githubUsername } = req.query;
@@ -78,28 +79,20 @@ const githubdata = async (req, res) => {
   }
 };
 
-const linkedinData = async (req, res) => {
+const createProfile = async (req, res) => {
   try {
     const {
-      userId, // Add userId to identify the user
       fullname,
       headline,
       summary,
       experience,
       skills,
       certifications,
-      education
+      education,
+      source
     } = req.body;
 
     // Validate required fields
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        data: null,
-        error: 'userId is required'
-      });
-    }
-
     if (!fullname && !headline) {
       return res.status(400).json({
         success: false,
@@ -108,96 +101,52 @@ const linkedinData = async (req, res) => {
       });
     }
 
-    // Structure LinkedIn data according to your schema
-    const linkedinDataToStore = {
+    // Create new profile data
+    const profileData = {
       FullName: fullname || '',
       headline: headline || '',
       Summary: summary || '',
       Experience: experience || [],
       Education: education || [],
       Skills: skills || [],
-      Certifications: certifications || []
+      Certifications: certifications || [],
+      source: source || 'Linkedin',
+      scraped_at: new Date()
     };
 
-    // Check if user already exists
-    let userProfile = await SocialsConnect.findOne({ userId });
+    const newProfile = new profiles(profileData);
+    const savedProfile = await newProfile.save();
 
-    if (userProfile) {
-      // Update existing user's LinkedIn data
-      userProfile.LinkedinData = linkedinDataToStore;
-      await userProfile.save();
-      
-      return res.status(200).json({
-        success: true,
-        data: {
-          personalInfo: {
-            name: userProfile.LinkedinData.FullName,
-            title: userProfile.LinkedinData.headline,
-            email: '', // Not stored in your schema
-            phone: '', // Not stored in your schema
-            location: '', // Not stored in your schema
-            linkedin: '', // Not stored in your schema
-            portfolio: '' // Not stored in your schema
-          },
-          summary: userProfile.LinkedinData.Summary,
-          experience: userProfile.LinkedinData.Experience,
-          skills: userProfile.LinkedinData.Skills,
-          certifications: userProfile.LinkedinData.Certifications,
-          education: userProfile.LinkedinData.Education,
-          languages: [], // Not in your schema
-          userId: userProfile.userId,
-          createdAt: userProfile.createdAt,
-          updatedAt: userProfile.updatedAt
+    return res.status(201).json({
+      success: true,
+      data: {
+        id: savedProfile._id,
+        personalInfo: {
+          name: savedProfile.FullName,
+          title: savedProfile.headline,
+          email: '',
+          phone: '',
+          location: '',
+          linkedin: '',
+          portfolio: ''
         },
-        error: null
-      });
-    } else {
-      // Create new user profile with LinkedIn data
-      const newProfile = new SocialsConnect({
-        userId,
-        LinkedinData: linkedinDataToStore,
-        githubScrapedData: {
-          userName: '',
-          avatar: '',
-          bio: '',
-          followers: '',
-          following: '',
-          repos: ''
-        }
-      });
-
-      const savedProfile = await newProfile.save();
-
-      return res.status(201).json({
-        success: true,
-        data: {
-          personalInfo: {
-            name: savedProfile.LinkedinData.FullName,
-            title: savedProfile.LinkedinData.headline,
-            email: '',
-            phone: '',
-            location: '',
-            linkedin: '',
-            portfolio: ''
-          },
-          summary: savedProfile.LinkedinData.Summary,
-          experience: savedProfile.LinkedinData.Experience,
-          skills: savedProfile.LinkedinData.Skills,
-          certifications: savedProfile.LinkedinData.Certifications,
-          education: savedProfile.LinkedinData.Education,
-          languages: [],
-          userId: savedProfile.userId,
-          createdAt: savedProfile.createdAt,
-          updatedAt: savedProfile.updatedAt
-        },
-        error: null
-      });
-    }
+        summary: savedProfile.Summary,
+        experience: savedProfile.Experience,
+        skills: savedProfile.Skills,
+        certifications: savedProfile.Certifications,
+        education: savedProfile.Education,
+        languages: [],
+        source: savedProfile.source,
+        scraped_at: savedProfile.scraped_at,
+        createdAt: savedProfile.createdAt,
+        updatedAt: savedProfile.updatedAt
+      },
+      error: null
+    });
 
   } catch (error) {
-    console.error('Error saving LinkedIn data:', error);
+    console.error('Error creating profile:', error);
     
-    // Handle specific MongoDB errors
     if (error.name === 'ValidationError') {
       return res.status(400).json({
         success: false,
@@ -206,141 +155,98 @@ const linkedinData = async (req, res) => {
       });
     }
 
-    if (error.code === 11000) {
-      return res.status(409).json({
-        success: false,
-        data: null,
-        error: 'Duplicate entry error'
-      });
-    }
-
-    // Generic error response
     return res.status(500).json({
       success: false,
       data: null,
-      error: 'Internal server error while saving LinkedIn data'
+      error: 'Internal server error while creating profile'
     });
   }
 };
 
-// Get LinkedIn data for a specific user
-const getLinkedinData = async (req, res) => {
+// Get all profiles with pagination and filtering
+const getAllProfiles = async (req, res) => {
   try {
-    const { userId } = req.params;
-    
-    const userProfile = await SocialsConnect.findOne({ userId });
-    
-    if (!userProfile || !userProfile.LinkedinData) {
-      return res.status(404).json({
-        success: false,
-        data: null,
-        error: 'LinkedIn profile not found for this user'
-      });
+    const { 
+      page = 1, 
+      limit = 10, 
+      source, 
+      search,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    // Build filter object
+    const filter = {};
+    if (source) filter.source = source;
+    if (search) {
+      filter.$or = [
+        { FullName: { $regex: search, $options: 'i' } },
+        { headline: { $regex: search, $options: 'i' } },
+        { Summary: { $regex: search, $options: 'i' } }
+      ];
     }
+
+    // Build sort object
+    const sort = {};
+    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    const [profilesList, totalCount] = await Promise.all([
+      profiles.find(filter)
+        .sort(sort)
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean(),
+      profiles.countDocuments(filter)
+    ]);
+
+    const totalPages = Math.ceil(totalCount / parseInt(limit));
 
     return res.status(200).json({
       success: true,
       data: {
-        personalInfo: {
-          name: userProfile.LinkedinData.FullName,
-          title: userProfile.LinkedinData.headline,
-          email: '',
-          phone: '',
-          location: '',
-          linkedin: '',
-          portfolio: ''
-        },
-        summary: userProfile.LinkedinData.Summary,
-        experience: userProfile.LinkedinData.Experience,
-        skills: userProfile.LinkedinData.Skills,
-        certifications: userProfile.LinkedinData.Certifications,
-        education: userProfile.LinkedinData.Education,
-        languages: [],
-        userId: userProfile.userId,
-        createdAt: userProfile.createdAt,
-        updatedAt: userProfile.updatedAt
+        profiles: profilesList.map(profile => ({
+          id: profile._id,
+          personalInfo: {
+            name: profile.FullName,
+            title: profile.headline,
+            email: '',
+            phone: '',
+            location: '',
+            linkedin: '',
+            portfolio: ''
+          },
+          summary: profile.Summary,
+          experience: profile.Experience,
+          skills: profile.Skills,
+          certifications: profile.Certifications,
+          education: profile.Education,
+          languages: [],
+          source: profile.source,
+          scraped_at: profile.scraped_at,
+          createdAt: profile.createdAt,
+          updatedAt: profile.updatedAt
+        })),
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages,
+          totalCount,
+          hasNextPage: parseInt(page) < totalPages,
+          hasPrevPage: parseInt(page) > 1
+        }
       },
       error: null
     });
 
   } catch (error) {
-    console.error('Error fetching LinkedIn data:', error);
+    console.error('Error fetching profiles:', error);
     return res.status(500).json({
       success: false,
       data: null,
-      error: 'Internal server error while fetching LinkedIn data'
+      error: 'Internal server error while fetching profiles'
     });
   }
 };
 
-
-const updateLinkedinData = async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const {
-      fullname,
-      headline,
-      summary,
-      experience,
-      skills,
-      certifications,
-      education
-    } = req.body;
-
-    const userProfile = await SocialsConnect.findOne({ userId });
-
-    if (!userProfile) {
-      return res.status(404).json({
-        success: false,
-        data: null,
-        error: 'User profile not found'
-      });
-    }
-
-    // Update LinkedIn data fields only if provided
-    if (fullname !== undefined) userProfile.LinkedinData.FullName = fullname;
-    if (headline !== undefined) userProfile.LinkedinData.headline = headline;
-    if (summary !== undefined) userProfile.LinkedinData.Summary = summary;
-    if (experience !== undefined) userProfile.LinkedinData.Experience = experience;
-    if (skills !== undefined) userProfile.LinkedinData.Skills = skills;
-    if (certifications !== undefined) userProfile.LinkedinData.Certifications = certifications;
-    if (education !== undefined) userProfile.LinkedinData.Education = education;
-
-    await userProfile.save();
-
-    return res.status(200).json({
-      success: true,
-      data: {
-        personalInfo: {
-          name: userProfile.LinkedinData.FullName,
-          title: userProfile.LinkedinData.headline,
-          email: '',
-          phone: '',
-          location: '',
-          linkedin: '',
-          portfolio: ''
-        },
-        summary: userProfile.LinkedinData.Summary,
-        experience: userProfile.LinkedinData.Experience,
-        skills: userProfile.LinkedinData.Skills,
-        certifications: userProfile.LinkedinData.Certifications,
-        education: userProfile.LinkedinData.Education,
-        languages: [],
-        userId: userProfile.userId,
-        createdAt: userProfile.createdAt,
-        updatedAt: userProfile.updatedAt
-      },
-      error: null
-    });
-
-  } catch (error) {
-    console.error('Error updating LinkedIn data:', error);
-    return res.status(500).json({
-      success: false,
-      data: null,
-      error: 'Internal server error while updating LinkedIn data'
-    });
-  }
-};
-
-export { githubScrapper, githubRepo, githubdata, linkedinData, updateLinkedinData};
+export { githubScrapper, githubRepo, githubdata, createProfile};

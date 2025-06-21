@@ -4,8 +4,12 @@
 import React, { useRef, useState, useEffect } from "react";
 import { Dialog } from "@headlessui/react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
+ 
 const parseResumeWithGemini = async (resumeText, apiKey) => {
+
+ 
   try {
     const prompt = `
 You are an expert resume parser. Parse the following resume text and return ONLY a valid JSON object with this exact structure:
@@ -78,12 +82,14 @@ ${resumeText}`;
 
     if (!response.ok) {
       const errorData = await response.json();
+      
       throw new Error(`Gemini API Error: ${response.status} - ${errorData.error?.message || response.statusText}`);
     }
 
     const data = await response.json();
     
     if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+
       throw new Error('Invalid response structure from Gemini API');
     }
 
@@ -112,6 +118,7 @@ ${resumeText}`;
     };
 
   } catch (error) {
+    
     console.error('Resume parsing error:', error);
     return {
       success: false,
@@ -119,6 +126,7 @@ ${resumeText}`;
       error: error.message
     };
   }
+  
 };
 
 const validateResumeStructure = (data) => {
@@ -169,7 +177,7 @@ const LinkedInUpload = ({ darkMode }) => {
 
   const [generatedText, setgeneratedText] = useState("");
 
-  const [jsonresume, setjsonresume] = useState("")
+
 
   useEffect(() => {
     const storedUser = localStorage.getItem("cvisionary:user");
@@ -224,13 +232,22 @@ const LinkedInUpload = ({ darkMode }) => {
   };
   
   const handleAnalyze=async()=>{
-
+    setLoading(true)
     const parsedResume=await parseResumeWithGemini(generatedText,import.meta.env.VITE_GEMINI_API_KEY)
+    setLoading(false)
     console.log(parsedResume)
+
+    try {
+      const response=await axios.post(`${import.meta.env.VITE_DEV_URL}linkedin/data`,{})
+    } catch (error) {
+      console.error(error)
+    }
   }
-  handleAnalyze()
+  
 
   
+
+
 
   const bgClass = darkMode ? "bg-[#0a0a23]" : "bg-white";
   const textClass = darkMode ? "text-white" : "text-gray-900";
@@ -303,17 +320,17 @@ const LinkedInUpload = ({ darkMode }) => {
           </button>
         </div>
 
-        {/* <div className="mt-6 text-right">
+        <div className="mt-6 text-right">
           <button
-            onClick={handleAnalyze()}
-            disabled={!parsedData || loading}
+            onClick={handleAnalyze}
+            disabled={!parsedData || loading }
             className={`${analyzeBtn} font-semibold py-2 px-6 rounded-lg transition-colors duration-300 cursor-pointer ${
               !parsedData || loading ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
             Analyze LinkedIn Scrap
           </button>
-        </div> */}
+        </div>
         <div>
           
         </div>
