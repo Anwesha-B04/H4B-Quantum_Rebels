@@ -1,38 +1,43 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 
-const NewJobModal = ({ isOpen, onClose, onSave, darkMode }) => { // <-- add darkMode prop
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    company: '',
-    location: '',
-    category: '',
-    jobType: '',
-    stipend: ''
-  });
-
-  const handleChange = (e) => {
-    setFormData({...formData, [e.target.name]: e.target.value });
-  };
+const NewJobModal = ({ isOpen, onClose, onSave, darkMode }) => {
+  
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [company, setCompany] = useState('');
+  const [location, setLocation] = useState('');
+  const [category, setCategory] = useState('');
+  const [jobType, setJobType] = useState('');
+  const [stipend, setStipend] = useState('');
 
   const handleSubmit = () => {
+    const formData = {
+      title,
+      description,
+      company,
+      location,
+      category,
+      jobType,
+      stipend
+    };
+
     onSave(formData);
-    setFormData({
-      title: '',
-      description: '',
-      company: '',
-      location: '',
-      category: '',
-      jobType: '',
-      stipend: ''
-    });
+
+    
+    setTitle('');
+    setDescription('');
+    setCompany('');
+    setLocation('');
+    setCategory('');
+    setJobType('');
+    setStipend('');
+
     onClose();
   };
 
   if (!isOpen) return null;
 
-  // Theme classes
   const modalBg = darkMode ? "bg-[#1a1a2e] text-white" : "bg-white text-[#1a1a2e]";
   const inputBg = darkMode ? "bg-[#2a2a40] border-gray-600 text-white" : "bg-gray-100 border-gray-300 text-[#1a1a2e]";
   const buttonBg = darkMode
@@ -64,16 +69,55 @@ const NewJobModal = ({ isOpen, onClose, onSave, darkMode }) => { // <-- add dark
         </h2>
 
         <div className="space-y-4">
-          {['title', 'description', 'company', 'location', 'category', 'jobType', 'stipend'].map((field) => (
-            <input 
-              key={field}
-              name={field}
-              placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
-              value={formData[field]}
-              onChange={handleChange}
-              className={`w-full p-3 rounded outline-none border ${inputBg}`}
-            />
-          ))}
+          <input
+            name="title"
+            placeholder="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className={`w-full p-3 rounded outline-none border ${inputBg}`}
+          />
+          <input
+            name="description"
+            placeholder="Description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className={`w-full p-3 rounded outline-none border ${inputBg}`}
+          />
+          <input
+            name="company"
+            placeholder="Company"
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
+            className={`w-full p-3 rounded outline-none border ${inputBg}`}
+          />
+          <input
+            name="location"
+            placeholder="Location"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            className={`w-full p-3 rounded outline-none border ${inputBg}`}
+          />
+          <input
+            name="category"
+            placeholder="Category"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className={`w-full p-3 rounded outline-none border ${inputBg}`}
+          />
+          <input
+            name="jobType"
+            placeholder="Job Type"
+            value={jobType}
+            onChange={(e) => setJobType(e.target.value)}
+            className={`w-full p-3 rounded outline-none border ${inputBg}`}
+          />
+          <input
+            name="stipend"
+            placeholder="Stipend"
+            value={stipend}
+            onChange={(e) => setStipend(e.target.value)}
+            className={`w-full p-3 rounded outline-none border ${inputBg}`}
+          />
         </div>
 
         <button
