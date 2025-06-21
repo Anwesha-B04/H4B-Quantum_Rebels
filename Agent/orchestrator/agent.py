@@ -46,7 +46,7 @@ def create_agent_executor(toolbox: ToolBox, session_id: str) -> AgentExecutor:
     if not gemini_api_key: raise ValueError("GEMINI_API_KEY environment variable is required")
     
     # FIX: Corrected model name to a valid, powerful option
-    llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", google_api_key=gemini_api_key, temperature=0.0, convert_system_message_to_human=True)
+    llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=gemini_api_key, temperature=0.0, convert_system_message_to_human=True)
     
     tools = [
         toolbox.retrieve_context_tool,

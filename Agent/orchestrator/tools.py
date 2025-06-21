@@ -8,7 +8,7 @@ from langchain.tools import tool
 from pydantic import ValidationError
 
 from .memory import get_session_context, update_session_context
-from .schemas import RetrieveResponse, GenerateResponse, ScoreResponse, SuggestionResponse
+from .schemas import RetrieveResponse, GenerateResponse, ScoreResponse, SuggestionResponse, ChunkItem
 
 # UPDATE: Use environment variables from .env for service URLs
 SCORING_SERVICE_URL = os.getenv("SCORING_SERVICE_URL", "http://localhost:8004")
