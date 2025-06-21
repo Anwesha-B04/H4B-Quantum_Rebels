@@ -35,16 +35,16 @@ def get_profiles_collection() -> Collection:
 
 def get_profile_by_id(user_id: str) -> Optional[Dict[str, Any]]:
     collection = get_profiles_collection()
-    return collection.find_one({"_id": user_id})
+    return collection.find_one({"user_id": user_id})
 
 def create_or_update_profile(profile_data: Dict[str, Any]) -> bool:
-    if not profile_data or "_id" not in profile_data:
+    if not profile_data or "user_id" not in profile_data:
         return False
         
     collection = get_profiles_collection()
     try:
         collection.update_one(
-            {"_id": profile_data["_id"]},
+            {"user_id": profile_data["user_id"]},
             {"$set": profile_data},
             upsert=True
         )
