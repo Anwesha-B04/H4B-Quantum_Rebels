@@ -10,6 +10,8 @@ const Login = () => {
   const [useremail, setemail] = useState("");
   const [userpassword, setpassword] = useState("");
   const [error, setError] = useState("");
+  const [role, setRole] = useState("");
+
   const navigate = useNavigate();
 
   const { user, signIn, isAuthenticated, isLoading } = useUser();
@@ -96,12 +98,29 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f0f1c] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#0f0f1c] flex items-center justify-center px-4 ">
       <div className="bg-[#1a1a2e] text-white rounded-2xl shadow-lg flex flex-col md:flex-row overflow-hidden w-full max-w-4xl">
         {/* Left Section */}
         <div className="flex-1 p-10">
           <h2 className="text-3xl font-bold mb-2">Welcome Back</h2>
           <p className="text-gray-400 mb-6">Login to your CVisionary account</p>
+
+          <div className="mb-4">
+            <label className="block mb-1 text-sm font-medium">Select Role</label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              required
+              className="w-full px-4 py-2 bg-[#2a2a40] border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+            >
+              <option value="" disabled>
+                -- Choose a role --
+              </option>
+              <option value="applicant">Applicant</option>
+              <option value="company">Company</option>
+            </select>
+          </div>
+
 
           <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
@@ -147,6 +166,7 @@ const Login = () => {
           </div>
 
           <div className="flex flex-col gap-4 mt-4">
+            <div className="flex flex-row gap-4">
             <button
               onClick={handleGithubLogin}
               className="w-full bg-white text-black py-2 rounded-md hover:opacity-90 transition duration-300 font-medium"
@@ -160,7 +180,7 @@ const Login = () => {
             >
               Login with Google
             </button>
-
+            </div>
             <button
               onClick={handleCivicLogin}
               className="w-full bg-blue-700 text-white py-2 rounded-md hover:bg-blue-800 transition duration-300 font-medium"

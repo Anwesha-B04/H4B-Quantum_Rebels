@@ -18,6 +18,7 @@ const Register = () => {
   const [username, setName] = useState("");
   const [useremail, setEmail] = useState("");
   const [userpassword, setPassword] = useState("");
+  const [role, setRole] = useState("");
 
   const { user, signIn, isAuthenticated, isLoading } = useUser();
 
@@ -100,27 +101,45 @@ const Register = () => {
         <div className="flex-1 p-10">
           <h2 className="text-3xl font-bold mb-2">Create an Account</h2>
           <p className="text-gray-400 mb-6">Join the CVisionary platform</p>
+          <div className="mb-4">
+            <label className="block mb-1 text-sm font-medium">Select Role</label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              required
+              className="w-full px-4 py-2 bg-[#2a2a40] border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+            >
+              <option value="" disabled>
+                -- Choose a role --
+              </option>
+              <option value="applicant">Applicant</option>
+              <option value="company">Company</option>
+            </select>
+          </div>
+
 
           <form className="space-y-5" onSubmit={handleSubmit}>
-            <div>
-              <label className="block mb-1 text-sm font-medium">Full Name</label>
-              <input
-                type="text"
-                placeholder="John Doe"
-                className="w-full px-4 py-2 bg-[#2a2a40] border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={username}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block mb-1 text-sm font-medium">Email</label>
-              <input
-                type="email"
-                placeholder="you@example.com"
-                className="w-full px-4 py-2 bg-[#2a2a40] border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={useremail}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+            <div className="flex flex-row gap-4">
+              <div >
+                <label className="block mb-1 text-sm font-medium">Full Name</label>
+                <input
+                  type="text"
+                  placeholder="John Doe"
+                  className="w-full px-4 py-2 bg-[#2a2a40] border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={username}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block mb-1 text-sm font-medium">Email</label>
+                <input
+                  type="email"
+                  placeholder="you@example.com"
+                  className="w-full px-4 py-2 bg-[#2a2a40] border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={useremail}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
             </div>
             <div>
               <label className="block mb-1 text-sm font-medium">Password</label>
