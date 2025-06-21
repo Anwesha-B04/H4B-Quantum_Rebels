@@ -33,6 +33,36 @@ async def get_http_client() -> httpx.AsyncClient:
     return http_client
 
 @app.post(
+    "/testing/create_profile",
+    response_model=schemas.IndexProfileResponse,
+    tags=["Testing"],
+    status_code=201,
+)
+async def create_test_profile(profile: schemas.CreateProfileRequest):
+    """
+    Create a test user profile in the database.
+    
+    This is a testing endpoint to create sample profiles for development.
+    In production, profiles should be created through the main application.
+    """
+    from bson import ObjectId
+    
+    # Generate a new ObjectId
+    user_id = str(ObjectId())
+    
+    # Convert the profile to a dictionary and add metadata
+    profile_data = profile.dict()
+    profile_data["_id"] = user_id
+    profile_data["created_at"] = datetime.utcnow()
+    profile_data["updated_at"] = datetime.utcnow()
+    
+    success = db.create_or_update_profile(profile_data)
+    if not success:
+        raise HTTPException(status_code=400, detail="Failed to create profile")
+    
+    return {"status": "success", "message": f"Test profile created with ID: {user_id}"}
+
+@app.post(
     "/index/profile/{user_id}", response_model=schemas.IndexProfileResponse, tags=["Indexing"]
 )
 async def index_user_profile(user_id: str):

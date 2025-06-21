@@ -12,7 +12,7 @@ APP_VERSION = "1.3.0-refactored"
 MONGO_URI = os.getenv("MONGO_URI")
 if not MONGO_URI:
     raise ValueError("MONGO_URI environment variable not set.")
-MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "cvisionary")
+MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "test")
 
 # --- Model ---
 # Using a specific model for consistency
