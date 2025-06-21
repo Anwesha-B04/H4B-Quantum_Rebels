@@ -19,6 +19,7 @@ export default function ChatWindow({ darkMode, setLivePreview }) {
   const [file, setFile] = useState(null);
 
   const containerRef = useRef(null);
+  
   const token=window.localStorage.getItem("tokenCV")
   const decoded=jwtDecode(token)
   console.log(decoded)

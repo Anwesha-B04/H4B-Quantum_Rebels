@@ -266,7 +266,7 @@ const LinkedInUpload = ({ darkMode }) => {
         }
       );
 
-      console.log(response.data.message);
+      console.log(response.data);
       setLogs(response.data.message);
     } catch (error) {
       console.error(error);

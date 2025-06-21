@@ -7,6 +7,7 @@ import { useUser } from "@civic/auth/react";
 import { getAuth, signOut as firebaseSignOut } from "firebase/auth"; 
 
 
+
 const Login = () => {
   const [useremail, setemail] = useState("");
   const [userpassword, setpassword] = useState("");
@@ -18,22 +19,35 @@ const Login = () => {
   const { user, signIn, isAuthenticated, isLoading } = useUser();
 
   const handleGoogleLogin = async () => {
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    console.log(result);
+    
+    const user = result.user;
+    const userId = user.uid; 
+    const username = user.displayName;
+    const useremail = user.email;
+    
+   
+    
+    localStorage.setItem("tokenCV", accessToken);
+    
+    const userInfo = {
+      name: user.displayName,
+      email: user.email,
+      picture: user.photoURL,
+      uid: user.uid
+    };
+    
+    localStorage.setItem("cvisionary:user", JSON.stringify(userInfo));
+    navigate("/dashboard");
+    
+  } catch (err) {
+    console.error("Google login error:", err.message);
 
-      const idToken = await result.user.getIdToken();
-      localStorage.setItem("tokenCV", idToken);
-
-      const userInfo = {
-        name: result.user.displayName,
-        picture: result.user.photoURL,
-      };
-      localStorage.setItem("cvisionary:user", JSON.stringify(userInfo));
-      navigate("/dashboard");
-    } catch (err) {
-      console.error("Google login error:", err.message);
-    }
-  };
+    alert("Login failed. Please try again.");
+  }
+};
 
   const handleGithubLogin = async () => {
     try {
