@@ -1,26 +1,26 @@
-Of course. It's essential that the foundational `Embedding Service` has a clear and comprehensive `README.md`. This document will explain its critical role, its API, and the specific setup steps required to get it running correctly, including the crucial MongoDB Atlas configuration.
-
-Here is a detailed `README.md` file for the `Embedding Service`.
-
----
-
 # CVisionary Embedding Service
 
-This is the foundational data processing and retrieval engine for the CVisionary ecosystem. It is a high-performance FastAPI microservice responsible for chunking text, generating sentence embeddings, and managing the low-level storage and retrieval of vectors in a MongoDB Atlas database.
+This is the foundational data processing and retrieval engine for the CVisionary ecosystem. It is a high-performance FastAPI microservice responsible for chunking text, generating sentence embeddings, and managing the low-level storage and retrieval of vectors in MongoDB Atlas.
+
+## Overview
+
+The Embedding Service is a critical component that processes and indexes user profile data for semantic search. It handles:
+- Text chunking and processing
+- High-dimensional vector embeddings
+- Efficient vector storage and retrieval
+- Integration with MongoDB Atlas for vector search
 
 ## 🚀 Technology Stack
 
-The service is built on a powerful stack designed for machine learning and data-intensive applications:
-
--   **FastAPI** - High-performance, asynchronous web framework for building the API.
--   **Sentence Transformers** - State-of-the-art Python library for generating high-quality text embeddings.
--   **MongoDB Atlas Vector Search** - The core database technology for storing and efficiently searching high-dimensional vector data.
--   **Pydantic** - Robust data validation and API schemas.
--   **NLTK** - Used for intelligent sentence tokenization during the text chunking process.
+- **FastAPI** - High-performance, asynchronous web framework
+- **Sentence Transformers** - For generating high-quality text embeddings
+- **MongoDB Atlas** - Vector search capabilities for efficient similarity search
+- **Pydantic** - Data validation and settings management
+- **NLTK** - Natural language processing for text chunking
 
 ## 🏗️ Architecture & Core Concepts
 
-This service is the lowest-level component in the stack. It is directly called by the `Retrieval Service` or by backend processes for data ingestion. It has no knowledge of upstream services.
+This service is the lowest-level component in the stack, directly called by the `Retrieval Service` or backend processes for data ingestion.
 
 ```mermaid
 graph TD
@@ -41,169 +41,237 @@ graph TD
     end
 ```
 
-### 1. Text Chunking & Embedding
+### Key Components
 
-The service does not store entire documents for search. Instead, it implements a sophisticated chunking strategy:
-1.  It ingests raw text from different sections of a user's profile (e.g., summary, experience).
-2.  It uses NLTK to split the text into individual sentences.
-3.  It groups these sentences into optimal "chunks" of around 150 words.
-4.  Each chunk is then converted into a 384-dimensional vector (an "embedding") using a Sentence Transformer model. This vector numerically represents the semantic meaning of the chunk.
+1. **Text Processing Pipeline**
+   - Ingests raw text from user profiles
+   - Splits text into semantic chunks
+   - Generates vector embeddings
+   - Stores data in MongoDB with vector indexes
 
-### 2. Vector Database & Search
-
-The generated chunks and their corresponding vectors are stored in a `chunks` collection in MongoDB. This collection is powered by an **Atlas Vector Search Index**, which allows for incredibly fast and efficient similarity searches. When a query vector is provided, the index can find the chunks whose vectors are "closest" in semantic space, not just those with matching keywords.
-
-### 3. On-Demand Indexing API
-
-The primary workflow is on-demand. An external service (like a MERN backend) first saves the raw profile data to a `profiles` collection. It then calls this service's `POST /index/profile/{user_id}` endpoint. The Embedding Service then reads from the `profiles` collection, performs the chunking and embedding process, and populates the searchable `chunks` collection.
+2. **Vector Search**
+   - Implements cosine similarity search
+   - Supports filtering by user and section
+   - Optimized for high-performance retrieval
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
--   Python 3.9+
--   A **MongoDB Atlas M10 or higher cluster**. The free M0 tier **does not support** Atlas Vector Search.
+- Python 3.9 or later
+- MongoDB Atlas M10 or higher cluster (M0 tier not supported for vector search)
+- Git for version control
 
 ### Local Setup
 
-1.  **Clone the repository and navigate to the service directory:**
-    ```bash
-    git clone <repository-url>
-    cd <repository-directory>/embedding_service
-    ```
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd <repository-directory>/embedding
+   ```
 
-2.  **Create and activate a virtual environment:**
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
-    ```
+2. **Set up a virtual environment**
+   ```bash
+   python -m venv venv
+   # On Windows:
+   venv\Scripts\activate
+   # On macOS/Linux:
+   source venv/bin/activate
+   ```
 
-3.  **Install dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-4.  **Download NLTK Data (CRITICAL STEP):**
-    This is a one-time setup step required for text chunking.
-    ```bash
-    python -c "import nltk; nltk.download('punkt')"
-    ```
+4. **Download NLTK data**
+   ```bash
+   python -c "import nltk; nltk.download('punkt')"
+   ```
 
-5.  **Configure Environment Variables:**
-    Create a `.env` file in the `embedding_service` directory.
-    ```env
-    # .env
-    # REQUIRED: Your full connection string to an M10+ MongoDB Atlas cluster
-    MONGO_URI="mongodb+srv://user:password@your-m10-cluster.mongodb.net/"
+5. **Configure environment variables**
+   Create a `.env` file with your MongoDB connection details:
+   ```env
+   MONGO_URI="mongodb+srv://username:password@your-cluster.mongodb.net/"
+   MONGO_DB_NAME="cvisionary"
+   ```
 
-    # The name of the database to use
-    MONGO_DB_NAME="cvisionary"
-    ```
+6. **Set up MongoDB Atlas Vector Search**
+   - Go to your MongoDB Atlas dashboard
+   - Navigate to your database and the `chunks` collection
+   - Click on "Search" and create a new search index
+   - Use the JSON editor to paste the following configuration:
+     ```json
+     {
+       "fields": [
+         {
+           "type": "vector",
+           "path": "embedding",
+           "numDimensions": 384,
+           "similarity": "cosine"
+         },
+         {"type": "filter", "path": "user_id"},
+         {"type": "filter", "path": "index_namespace"},
+         {"type": "filter", "path": "section_id"}
+       ]
+     }
+     ```
+   - Save the index and wait for it to become active
 
-6.  **Create the Atlas Vector Search Index (CRITICAL STEP):**
-    This index **must be created manually** via the MongoDB Atlas website. The application will not create it for you on compatible tiers.
-    -   Navigate to your cluster -> Browse Collections -> `cvisionary` database -> `chunks` collection.
-    -   Click the **Search** tab and create a new **Atlas Vector Search** index.
-    -   Use the **JSON Editor** and paste the following exact configuration:
-        ```json
-        {
-          "fields": [
-            {
-              "type": "vector",
-              "path": "embedding",
-              "numDimensions": 384,
-              "similarity": "cosine"
-            },
-            {
-              "type": "filter",
-              "path": "user_id"
-            },
-            {
-              "type": "filter",
-              "path": "index_namespace"
-            },
-            {
-              "type": "filter",
-              "path": "section_id"
-            }
-          ]
-        }
-        ```
-    -   Save the index and wait for its status to become **Active**.
-
-7.  **Run the service:**
-    This service runs on port `9999` to avoid conflicts with other services.
-    ```bash
-    uvicorn embedding_service.app:app --host 0.0.0.0 --port 9999 --reload
-    ```
+7. **Start the service**
+   ```bash
+   uvicorn embedding.app:app --host 0.0.0.0 --port 8000 --reload
+   ```
+   The service will be available at `http://localhost:8000`
 
 ## 📚 API Documentation
 
 ### Indexing Endpoints
 
-#### 1. Index a Full Profile
--   **Endpoint:** `POST /index/profile/{user_id}`
--   **Description:** Reads a user's full profile from the `profiles` collection, processes it, and populates the `chunks` collection for searching.
--   **cURL Example:**
-    ```bash
-    # Ensure a document with _id: "user12345" exists in the 'profiles' collection first!
-    curl -X POST "http://localhost:9999/index/profile/user12345"
-    ```
--   **Success Response:** `{"status":"success","message":"Profile indexed successfully into X chunks."}`
+#### 1. Index Full Profile
+```http
+POST /index/profile/{user_id}
+```
 
-#### 2. Index a Specific Resume Section
--   **Endpoint:** `POST /index/{user_id}/section`
--   **Description:** Indexes a single piece of text into the `resume_sections` namespace. Used for user-edited content.
--   **cURL Example:**
-    ```bash
-    curl -X POST "http://localhost:9999/index/user12345/section" \
-    -H "Content-Type: application/json" \
-    -d '{
-      "section_id": "exp-bullet-1",
-      "text": "Engineered a real-time data processing pipeline using Kafka and Flink."
-    }'
-    ```
--   **Success Response:** `{"status":"success","section_id":"exp-bullet-1", ...}`
+Indexes a user's full profile from the database.
+
+**Request:**
+- `user_id`: The ID of the user to index
+
+**Example:**
+```bash
+curl -X POST "http://localhost:8000/index/profile/user123"
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Profile indexed successfully into 12 chunks."
+}
+```
+
+#### 2. Index Resume Section
+```http
+POST /index/{user_id}/section
+```
+
+Indexes a specific section of a resume.
+
+**Request Body:**
+```json
+{
+  "section_id": "experience-1",
+  "text": "Your section content here..."
+}
+```
+
+**Example:**
+```bash
+curl -X POST "http://localhost:8000/index/user123/section" \
+  -H "Content-Type: application/json" \
+  -d '{"section_id": "exp-1", "text": "Developed machine learning models..."}'
+```
 
 ### Retrieval Endpoint
 
-#### 1. Retrieve Similar Chunks
--   **Endpoint:** `POST /retrieve/{user_id}`
--   **Description:** The core search endpoint. Finds the `top_k` chunks most similar to a `query_embedding`. Can be filtered by namespace and section IDs. This is primarily used by the `Retrieval Service`.
--   **cURL Example:**
-    ```bash
-    # This requires a pre-computed 384-dimension vector.
-    # The Retrieval Service handles this automatically.
-    curl -X POST "http://localhost:9999/retrieve/user12345" \
-    -H "Content-Type: application/json" \
-    -d '{
-      "query_embedding": [0.1, 0.2, ..., -0.5],
-      "top_k": 5,
-      "index_namespace": "profile"
-    }'
-    ```
+#### Search Similar Chunks
+```http
+POST /retrieve/{user_id}
+```
+
+Finds chunks similar to the provided query embedding.
+
+**Request Body:**
+```json
+{
+  "query_embedding": [0.1, 0.2, ...],
+  "top_k": 5,
+  "index_namespace": "profile"
+}
+```
+
+**Example:**
+```bash
+curl -X POST "http://localhost:8000/retrieve/user123" \
+  -H "Content-Type: application/json" \
+  -d '{"query_embedding": [0.1, 0.2, ...], "top_k": 5}'
+```
 
 ### Utility Endpoints
--   `POST /embed`: Generates an embedding for a given string of text.
--   `GET /health`: A simple health check endpoint.
+
+#### Generate Embedding
+```http
+POST /embed
+```
+
+Generates an embedding for the provided text.
+
+**Request Body:**
+```json
+{
+  "text": "Text to embed"
+}
+```
+
+#### Health Check
+```http
+GET /health
+```
+
+**Response:**
+```json
+{
+  "status": "ok",
+  "service": "embedding"
+}
+```
 
 ## ⚠️ Error Handling
--   **404 Not Found:** Returned by `/retrieve` if a user has not been indexed yet.
--   **500 Internal Server Error:** Can occur if there is a problem with the database connection or the Atlas Search Index configuration. Check the service logs for a detailed Python traceback.
+
+| Status Code | Description |
+|-------------|-------------|
+| 400 | Invalid request parameters |
+| 404 | User or resource not found |
+| 422 | Validation error |
+| 500 | Internal server error |
+
+Check the service logs for detailed error information.
 
 ## 📁 Project Structure
 
 ```
-embedding_service/
-├── .env
-├── requirements.txt
-└── embedding_service/
-    ├── __init__.py
-    ├── app.py            # Main FastAPI application and API endpoints
-    ├── chunking.py       # Logic for splitting text into chunks
-    ├── config.py         # Centralized configuration loader
-    ├── db.py             # All MongoDB interaction logic
-    ├── model.py          # Sentence Transformer model loading and embedding logic
-    ├── schemas.py        # Pydantic models for API validation
-    └── services.py       # Core business logic for indexing workflows
+embedding/
+├── .env                    # Environment variables
+├── requirements.txt        # Python dependencies
+└── embedding/              # Source code
+    ├── __init__.py         # Package initialization
+    ├── app.py              # FastAPI application and routes
+    ├── chunking.py         # Text processing and chunking
+    ├── config.py           # Configuration management
+    ├── db.py               # Database operations
+    ├── model.py            # Embedding model handling
+    ├── schemas.py          # Request/response models
+    └── services.py         # Business logic
 ```
+
+## 🛠 Development
+
+### Running Tests
+```bash
+pytest tests/
+```
+
+### Code Formatting
+```bash
+black .
+```
+
+### Linting
+```bash
+flake8 .
+```
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
