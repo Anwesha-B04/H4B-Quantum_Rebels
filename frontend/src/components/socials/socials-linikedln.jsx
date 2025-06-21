@@ -5,6 +5,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { Dialog } from "@headlessui/react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 
  
 const parseResumeWithGemini = async (resumeText, apiKey) => {
@@ -177,6 +178,8 @@ const LinkedInUpload = ({ darkMode }) => {
 
   const [generatedText, setgeneratedText] = useState("");
 
+  const [Logs, setLogs] = useState("")
+
 
 
   useEffect(() => {
@@ -231,6 +234,11 @@ const LinkedInUpload = ({ darkMode }) => {
     uploadPDF(e);
   };
   
+
+  const token = window.localStorage.getItem("tokenCV");
+    const decoded = jwtDecode(token);
+    console.log("jwt:", decoded);
+  
   const handleAnalyze=async()=>{
     setLoading(true)
     const parsedResume=await parseResumeWithGemini(generatedText,import.meta.env.VITE_GEMINI_API_KEY)
@@ -238,7 +246,19 @@ const LinkedInUpload = ({ darkMode }) => {
     console.log(parsedResume)
 
     try {
-      const response=await axios.post(`${import.meta.env.VITE_DEV_URL}linkedin/data`,{})
+      const response=await axios.post(`${import.meta.env.VITE_DEV_URL}Scrapper/linkedin/data`,{userId:decoded.userId,fullname: parsedResume.data.personalInfo.name,
+      headline: parsedResume.data.personalInfo.title,
+      summary: parsedResume.data.summary,
+      experience: parsedResume.data.experience,
+      skills: parsedResume.data.skills,
+      certifications : parsedResume.data.certifications,
+      education : parsedResume.data.education,
+      source: "Linkedin"
+    })
+
+      console.log(response.data.message)
+      setLogs(response.data.message)
+      
     } catch (error) {
       console.error(error)
     }
@@ -331,6 +351,7 @@ const LinkedInUpload = ({ darkMode }) => {
             Analyze LinkedIn Scrap
           </button>
         </div>
+        <h3 className="text-blue-600 text-center">{Logs}</h3>
         <div>
           
         </div>

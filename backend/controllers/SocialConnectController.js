@@ -82,6 +82,7 @@ const githubdata = async (req, res) => {
 const createProfile = async (req, res) => {
   try {
     const {
+      userId,
       fullname,
       headline,
       summary,
@@ -103,6 +104,7 @@ const createProfile = async (req, res) => {
 
     // Create new profile data
     const profileData = {
+      userId:userId||"",
       FullName: fullname || '',
       headline: headline || '',
       Summary: summary || '',
@@ -141,7 +143,7 @@ const createProfile = async (req, res) => {
         createdAt: savedProfile.createdAt,
         updatedAt: savedProfile.updatedAt
       },
-      error: null
+      error: null , message:"Linkedin Scraped SuccessFully"
     });
 
   } catch (error) {
@@ -163,7 +165,7 @@ const createProfile = async (req, res) => {
   }
 };
 
-// Get all profiles with pagination and filtering
+
 const getAllProfiles = async (req, res) => {
   try {
     const { 
