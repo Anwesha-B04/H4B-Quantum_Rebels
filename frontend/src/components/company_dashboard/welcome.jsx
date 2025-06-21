@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-const WelcomeSectionCompany = () => {
+const WelcomeSectionCompany = ({ darkMode }) => {
   const [userName, setUserName] = useState('');
 
   useEffect(() => {
@@ -12,9 +12,9 @@ const WelcomeSectionCompany = () => {
   }, []);
 
   return (
-    <div className="text-white text-center py-12 mt-16 bg-[#0d0b22]">
-      <h1 className="text-4xl font-bold mb-4">Welcome back, {userName} 👋</h1>
-      <p className="text-lg text-gray-400">Manage your job postings and find great candidates</p>
+    <div className={`text-center py-12 mt-16 transition-colors duration-300 ${darkMode ? "bg-[#0d0b22] text-white" : "bg-white text-gray-900"}`}>
+      <h1 className="text-4xl font-bold mb-4">Welcome back, {userName} </h1>
+      <p className={`text-lg ${darkMode ? "text-gray-400" : "text-gray-600"}`}>Manage your job postings and find great candidates</p>
     </div>
   );
 };

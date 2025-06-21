@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 
-const NewJobModal = ({ isOpen, onClose, onSave }) => {
+const NewJobModal = ({ isOpen, onClose, onSave, darkMode }) => { // <-- add darkMode prop
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -32,13 +32,36 @@ const NewJobModal = ({ isOpen, onClose, onSave }) => {
 
   if (!isOpen) return null;
 
+  // Theme classes
+  const modalBg = darkMode ? "bg-[#1a1a2e] text-white" : "bg-white text-[#1a1a2e]";
+  const inputBg = darkMode ? "bg-[#2a2a40] border-gray-600 text-white" : "bg-gray-100 border-gray-300 text-[#1a1a2e]";
+  const buttonBg = darkMode
+    ? "bg-blue-600 hover:bg-blue-700 text-white"
+    : "bg-blue-600 hover:bg-blue-700 text-white";
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 ">
-      <div className="bg-[#1a1a2e] p-8 rounded-lg shadow-lg w-full max-w-lg text-white relative">
-        <button onClick={onClose} className="flex items-center justify-center  ">
-          <X size={24} />
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50">
+      <div
+        className={`p-8 rounded-2xl shadow-2xl w-full max-w-lg relative border transition-all duration-300 ${
+          darkMode
+            ? "border-[#23234a] bg-gradient-to-br from-[#1a1a2e] via-[#23234a] to-[#22223b]"
+            : "border-gray-200 bg-gradient-to-br from-white via-blue-50 to-white"
+        }`}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-5 right-5 text-gray-400 hover:text-red-500 transition-colors"
+          aria-label="Close"
+        >
+          <X size={28} />
         </button>
-        <h2 className="text-2xl mb-4 font-bold">Create New Job</h2>
+        <h2
+          className={`text-3xl mb-6 font-extrabold tracking-tight text-center ${
+            darkMode ? "text-white" : "text-[#1a1a2e]"
+          }`}
+        >
+          Create New Job
+        </h2>
 
         <div className="space-y-4">
           {['title', 'description', 'company', 'location', 'category', 'jobType', 'stipend'].map((field) => (
@@ -48,12 +71,15 @@ const NewJobModal = ({ isOpen, onClose, onSave }) => {
               placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
               value={formData[field]}
               onChange={handleChange}
-              className="w-full p-3 rounded bg-[#2a2a40] border border-gray-600 outline-none"
+              className={`w-full p-3 rounded outline-none border ${inputBg}`}
             />
           ))}
         </div>
 
-        <button onClick={handleSubmit} className="w-full mt-6 bg-blue-600 hover:bg-blue-700 py-3 rounded font-semibold">
+        <button
+          onClick={handleSubmit}
+          className={`w-full mt-8 py-3 rounded-lg font-semibold shadow-md transition-all duration-200 transform hover:scale-[1.03] active:scale-100 ${buttonBg}`}
+        >
           Save Job
         </button>
       </div>
