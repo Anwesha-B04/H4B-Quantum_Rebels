@@ -83,8 +83,10 @@ export default function ChatWindow({ darkMode, setLivePreview }) {
         key={idx}
         className={`max-w-[80%] px-4 py-3 my-1 mt-20 rounded-xl whitespace-pre-wrap ${
           msg.from === "user"
-            ? "bg-blue-500 text-white self-end ml-auto"
-            : "bg-gray-200 dark:bg-gray-700 text-black dark:text-white"
+            ? "bg-[#2563eb] text-white self-end ml-auto"
+            : darkMode
+              ? "bg-[#181a2a] text-white"
+              : "bg-[#e5e7eb] text-[#181A2A]"
         }`}
       >
         {msg.text}
@@ -108,9 +110,9 @@ export default function ChatWindow({ darkMode, setLivePreview }) {
         )}
       </div>
 
-      <div className="flex items-center space-x-2 pt-2 border-t border-gray-700 mt-2">
+      <div className={`flex items-center space-x-2 pt-2 border-t ${darkMode ? "border-[#23243a]" : "border-[#e5e7eb]"} mt-2`}>
         <label className="cursor-pointer">
-          <Paperclip className="w-5 h-5 text-gray-400 hover:text-gray-200" />
+          <Paperclip className={`w-5 h-5 ${darkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-400 hover:text-gray-600"}`} />
           <input
             type="file"
             className="hidden"
@@ -119,7 +121,7 @@ export default function ChatWindow({ darkMode, setLivePreview }) {
         </label>
 
         {file && (
-          <div className="text-xs text-gray-300 truncate max-w-[200px]">
+          <div className={`text-xs truncate max-w-[200px] ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
             📎 {file.name}
           </div>
         )}
@@ -130,11 +132,15 @@ export default function ChatWindow({ darkMode, setLivePreview }) {
           onKeyDown={handleKeyPress}
           placeholder="Type your prompt..."
           rows={1}
-          className="flex-1 px-4 py-2 rounded-lg bg-gray-800 text-white outline-none resize-none"
+          className={`flex-1 px-4 py-2 rounded-lg outline-none resize-none ${
+            darkMode
+              ? "bg-[#23243a] text-white placeholder:text-gray-400"
+              : "bg-white text-[#181A2A] placeholder:text-gray-500 border border-[#e5e7eb]"
+          }`}
         />
 
         <button onClick={handleSend}>
-          <SendHorizonal className="text-blue-400 hover:text-blue-600 w-5 h-5" />
+          <SendHorizonal className="text-[#2563eb] hover:text-[#1d4ed8] w-5 h-5" />
         </button>
       </div>
     </div>
