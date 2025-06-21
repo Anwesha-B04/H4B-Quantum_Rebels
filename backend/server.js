@@ -13,6 +13,7 @@ import path from 'path';
 import PDFParser from 'pdf2json';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import ScrapperRouter from "./Routes/SocialConnectRoutes.js";
 
 
 const app = express()
@@ -39,6 +40,7 @@ app.use("/auth",UserRouter)
 app.use("/jobs",JobRouter)
 app.use("/resume", ResumeRouter);
 app.use("/reviews",ReviewsRouter)
+app.use("/Scrapper",ScrapperRouter)
 
 
 const __filename = fileURLToPath(import.meta.url);

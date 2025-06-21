@@ -105,8 +105,6 @@ async def retrieve_similar_chunks(user_id: str, request: schemas.RetrieveRequest
                 status_code=404,
                 detail="No indexed data found for user. Please index data first."
             )
-        
-        # FIX: Use datetime.utcnow() to get a naive datetime for comparison
         if (datetime.utcnow() - last_indexed).days > 7:
             print(f"Warning: User {user_id}'s data was last indexed {last_indexed}")
 
@@ -123,9 +121,6 @@ async def retrieve_similar_chunks(user_id: str, request: schemas.RetrieveRequest
         return schemas.RetrieveResponse(results=results)
 
     except Exception as e:
-        # You can keep the detailed error logging for now if you like, or remove it.
-        # For production, you'd want a cleaner error handler.
-        print(f"An error occurred during retrieval: {e}")
         raise HTTPException(status_code=500, detail=f"An internal error occurred during retrieval.")
 
 @app.post("/embed", response_model=schemas.EmbedResponse, tags=["Utilities"])
