@@ -30,12 +30,13 @@ const postJob=async(req,res)=>{
 }
 
 const getAllJobs =async(req,res)=>{
+    const {userId}=req.body;
     try {
-        const jobs=await Job.find().sort({ createdAt: -1 });
+        const jobs=await Job.find({userId}).sort({ createdAt: -1 });
        return res.status(200).json({
            success: true,
            message: "Jobs fetched successfully",
-           jobs
+           jobs:jobs
        });
     } catch (error) {
         console.error(error);

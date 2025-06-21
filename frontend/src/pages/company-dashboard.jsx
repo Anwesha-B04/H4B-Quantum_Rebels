@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Navbar from "@/components/landing/Navbar";
 import WelcomeSectionCompany from "../components/company_dashboard/welcome";
 import NewJobModal from "../components/company_dashboard/newjobmodal";
@@ -6,6 +6,7 @@ import JobsList from "../components/company_dashboard/joblist";
 import Footer from "@/components/dashboard/footer";
 import { getInitialDarkMode, setDarkModePreference } from "@/utils/theme";
 import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 
 const CompanyDashboard = () => {
   const [jobs, setJobs] = useState([]);
@@ -21,18 +22,25 @@ const CompanyDashboard = () => {
     setDarkMode(value);
     setDarkModePreference(value);
   };
+  
 
   const token = window.localStorage.getItem("tokenCV");
         const decoded = jwtDecode(token);
-        console.log("jwt:", decoded);
+        
   
   const fetchJobs=async()=>{
     try {
-      const response=await axios.get(`${import.meta.env.VITE_DEV_URL}`)
+      const response=await axios.get(`${import.meta.env.VITE_DEV_URL}jobs/all`,{userId:decoded.userId})
+      console.log(response)
+      setJobs(response.data)
     } catch (error) {
       console.error(error)
     }
   }
+
+  useEffect(()=>{
+    fetchJobs()
+  },[])
 
   return (
     <div className={`app ${darkMode ? "dark" : "light"}`}>
