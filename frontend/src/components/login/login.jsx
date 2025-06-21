@@ -16,7 +16,7 @@ const Login = () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       console.log("Google login successful: ", result.user);
-      // ✅ Save name to localStorage
+      
       localStorage.setItem("userName", result.user.displayName);
       navigate("/dashboard");
     } catch (error) {
@@ -43,10 +43,10 @@ const Login = () => {
 
   const handleSubmit = async(e) => {
     e.preventDefault();
-    console.log("Form Submitted", { useremail, userpassword });
+    
     try {
       const response=await axios.post(`${import.meta.env.VITE_DEV_URL}auth/login`,{useremail, userpassword})
-      
+      console.log(response)
       if(response.data.success){
         localStorage.setItem("tokenCV", response.data.accessToken);
         console.log("Login successful:", response.data.message);
@@ -58,9 +58,9 @@ const Login = () => {
       
     } catch (error) {
       console.error("Login error:", error);
-      setError("An error occurred during login. Please try again.");
-       setemail("");
-      setpassword("");
+      setError(error.message);
+      // setemail("");
+      // setpassword("");
     }
   }
 
@@ -106,6 +106,7 @@ const Login = () => {
             >
               Login
             </button>
+            <h3 className="text-red-700">{Error}</h3>
           </form>
 
           <div className="my-6 flex items-center gap-2 text-gray-500 text-sm">

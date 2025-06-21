@@ -17,6 +17,8 @@ const Register = () => {
   const [useremail, setEmail] = useState("");
   const [userpassword, setPassword] = useState("");
 
+  const [Error, setError] = useState("")
+
   const handleGoogleSignUp = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
@@ -46,15 +48,18 @@ const Register = () => {
     console.log("Form Data:", { username,useremail,userpassword });
     try {
       const response=await axios.post(`${import.meta.env.VITE_DEV_URL}auth/register`,{username,useremail,userpassword})
-      
+      console.log(response)
       if(response.data.success){
         localStorage.setItem("tokenCV", response.data.accessToken);
         console.log("Registration successful:", response.data.message);
         navigate("/dashboard");
-      } 
+      } else{
+        setError(response.data.message)
+      }
     } catch (error) {
       console.error("Registration error:", error);
-      alert("Registration failed. Please try again.");
+      setError(error.message)
+
     }
   };
 
@@ -113,6 +118,7 @@ const Register = () => {
             >
               Sign Up
             </button>
+            <h3 className="text-red-700">{Error}</h3>
           </form>
 
           <div className="my-6 flex items-center gap-2 text-gray-500 text-sm">
