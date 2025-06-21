@@ -1,9 +1,9 @@
-# --- START OF FILE app.py ---
 from fastapi import FastAPI, HTTPException, Depends
 from contextlib import asynccontextmanager
 import httpx
 from datetime import datetime
 import pytz
+import traceback
 from dotenv import load_dotenv
 load_dotenv()
 from . import services, db, model, config, schemas
@@ -33,13 +33,30 @@ async def get_http_client() -> httpx.AsyncClient:
     return http_client
 
 @app.post(
+    "/testing/create_profile",
+    response_model=schemas.IndexProfileResponse,
+    tags=["Testing"],
+    status_code=201,
+)
+async def create_test_profile(profile: schemas.CreateProfileRequest):
+    from bson import ObjectId
+    
+    user_id = str(ObjectId())
+    profile_data = profile.dict()
+    profile_data["_id"] = user_id
+    profile_data["created_at"] = datetime.utcnow()
+    profile_data["updated_at"] = datetime.utcnow()
+    
+    success = db.create_or_update_profile(profile_data)
+    if not success:
+        raise HTTPException(status_code=400, detail="Failed to create profile")
+    
+    return {"status": "success", "message": f"Test profile created with ID: {user_id}"}
+
+@app.post(
     "/index/profile/{user_id}", response_model=schemas.IndexProfileResponse, tags=["Indexing"]
 )
 async def index_user_profile(user_id: str):
-    """
-    Triggers the indexing of a user's profile, reading data directly from the database.
-    This endpoint should be called by the MERN backend after it saves a profile.
-    """
     try:
         total_chunks = await services.index_profile_from_db(user_id)
         return {"status": "success", "message": f"Profile indexed successfully into {total_chunks} chunks."}
@@ -88,9 +105,9 @@ async def retrieve_similar_chunks(user_id: str, request: schemas.RetrieveRequest
                 status_code=404,
                 detail="No indexed data found for user. Please index data first."
             )
-        if (datetime.now(pytz.utc) - last_indexed).days > 7:
+        if (datetime.utcnow() - last_indexed).days > 7:
             print(f"Warning: User {user_id}'s data was last indexed {last_indexed}")
-        
+
         search_results = db.search_chunks_vector(
             user_id=user_id,
             namespace=request.index_namespace,
@@ -98,10 +115,13 @@ async def retrieve_similar_chunks(user_id: str, request: schemas.RetrieveRequest
             top_k=request.top_k,
             filter_by_section_ids=request.filter_by_section_ids
         )
+        
         results = [schemas.ChunkItem(**res) for res in search_results]
+
         return schemas.RetrieveResponse(results=results)
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error during retrieval: {e}")
+        raise HTTPException(status_code=500, detail=f"An internal error occurred during retrieval.")
 
 @app.post("/embed", response_model=schemas.EmbedResponse, tags=["Utilities"])
 async def embed_text_endpoint(request: schemas.EmbedRequest):

@@ -1,4 +1,3 @@
-# --- START OF FILE db.py ---
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from typing import List, Optional, Dict, Any
@@ -37,6 +36,22 @@ def get_profiles_collection() -> Collection:
 def get_profile_by_id(user_id: str) -> Optional[Dict[str, Any]]:
     collection = get_profiles_collection()
     return collection.find_one({"_id": user_id})
+
+def create_or_update_profile(profile_data: Dict[str, Any]) -> bool:
+    if not profile_data or "_id" not in profile_data:
+        return False
+        
+    collection = get_profiles_collection()
+    try:
+        collection.update_one(
+            {"_id": profile_data["_id"]},
+            {"$set": profile_data},
+            upsert=True
+        )
+        return True
+    except Exception as e:
+        print(f"Error creating/updating profile: {e}")
+        return False
 
 def store_chunk(chunk_id: str, user_id: str, namespace: str, section_id: Optional[str],
                 source_type: str, source_id: str, text: str, embedding_vector: np.ndarray) -> None:

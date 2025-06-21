@@ -1,17 +1,60 @@
-# --- START OF FILE chunking.py ---
 import nltk
+import logging
 from typing import List, Tuple
 
-try:
-    nltk.data.find("tokenizers/punkt")
-except LookupError:
-    nltk.download("punkt")
+logger = logging.getLogger(__name__)
+
+def _download_nltk_data():
+    required_data = ["punkt", "punkt_tab"]
+    
+    for data in required_data:
+        try:
+            nltk.data.find(f"tokenizers/{data}")
+            logger.info(f"NLTK {data} tokenizer found")
+        except LookupError:
+            logger.info(f"Downloading NLTK {data} tokenizer...")
+            try:
+                nltk.download(data, quiet=True)
+                logger.info(f"Successfully downloaded NLTK {data} tokenizer")
+            except Exception as e:
+                logger.error(f"Failed to download NLTK {data} tokenizer: {e}")
+                try:
+                    import ssl
+                    import urllib.request
+                    import shutil
+                    
+                    nltk_dir = os.path.join(os.path.expanduser('~'), 'nltk_data')
+                    os.makedirs(nltk_dir, exist_ok=True)
+                    
+                    url = f"https://raw.githubusercontent.com/nltk/nltk_data/gh-pages/packages/tokenizers/{data}.zip"
+                    target_path = os.path.join(nltk_dir, f"{data}.zip")
+                    
+                    ssl._create_default_https_context = ssl._create_unverified_context
+                    
+                    with urllib.request.urlopen(url) as response, open(target_path, 'wb') as out_file:
+                        shutil.copyfileobj(response, out_file)
+                    
+                    import zipfile
+                    with zipfile.ZipFile(target_path, 'r') as zip_ref:
+                        zip_ref.extractall(nltk_dir)
+                    
+                    logger.info(f"Successfully downloaded and extracted {data} from GitHub")
+                except Exception as e2:
+                    logger.error(f"Alternative download method also failed: {e2}")
+                    raise
+
+_download_nltk_data()
 
 def chunk_text(text: str, max_words: int = 150) -> List[str]:
     if not text or not text.strip():
         return []
 
-    sentences = nltk.sent_tokenize(text)
+    try:
+        sentences = nltk.sent_tokenize(text)
+    except LookupError:
+        _download_nltk_data()
+        sentences = nltk.sent_tokenize(text)
+        
     chunks = []
     current_chunk = []
     current_word_count = 0
