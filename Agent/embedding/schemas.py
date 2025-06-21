@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, AliasChoices
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Dict
 from datetime import datetime
 from . import config
 
@@ -19,6 +19,27 @@ class IndexSectionResponse(BaseModel):
     status: str
     section_id: str
     chunk_ids: List[str]
+
+class ProfileBase(BaseModel):
+    name: str
+    email: str
+    bio: Optional[str] = None
+    skills: List[str] = []
+    experience: List[Dict] = []
+    education: List[Dict] = []
+
+class Profile(ProfileBase):
+    id: str = Field(..., alias="_id")
+    
+    class Config:
+        allow_population_by_field_name = True
+        json_encoders = {
+            "ObjectId": str
+        }
+
+class CreateProfileRequest(ProfileBase):
+    """Schema for creating a new profile."""
+    pass
 
 class IndexProfileResponse(BaseModel):
     status: str
